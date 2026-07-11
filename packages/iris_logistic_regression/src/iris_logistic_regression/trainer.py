@@ -4,6 +4,7 @@ import time
 from typing import cast
 
 from iris_logistic_regression.config import IrisConfig
+from iris_logistic_regression.utils.early_stopping import EarlyStopping
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
@@ -62,10 +63,12 @@ class IrisTrainer:
             "gpu_memory": [],
         }
 
+        early_stopping = EarlyStopping(patience=self._config.patience)
+
         for epoch in range(self._config.epochs):
             epoch_start = time.perf_counter()
 
-            train_loss, train_acc = self.train_epoch()
+            train_loss, train_acc = self._train_epoch()
             val_loss, val_acc = self.validate()
 
             current_lr = self._optimizer.param_groups[0]["lr"]
@@ -103,6 +106,10 @@ class IrisTrainer:
                 epoch_time,
             )
 
+            if early_stopping.step(val_acc):
+                logger.info("早停触发于第 %d 轮", epoch)
+                break
+
         logger.info("加载最佳模型: %s", self._save_path)
         self._model.load_state_dict(
             torch.load(
@@ -117,7 +124,7 @@ class IrisTrainer:
 
         return {**history, "test_acc": [test_acc]}
 
-    def train_epoch(self) -> tuple[float, float]:
+    def _train_epoch(self) -> tuple[float, float]:
         self._model.train()
 
         total_loss = 0.0

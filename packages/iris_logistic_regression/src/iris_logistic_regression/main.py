@@ -5,7 +5,7 @@ from iris_logistic_regression.dataset import build_dataloader, load_iris
 from iris_logistic_regression.model import IrisClassifier
 from iris_logistic_regression.plots import plot_train_history
 from iris_logistic_regression.trainer import IrisTrainer
-from iris_logistic_regression.utils import get_device
+from iris_logistic_regression.utils.device import get_device
 
 logger = logging.getLogger(__name__)
 

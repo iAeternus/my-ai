@@ -18,6 +18,7 @@ class IrisConfig:
     epochs: int = 100
     lr: float = 0.01
     weight_decay: float = 5e-4
+    patience: int = 30
     save_dir: Path = Path(OUTPUT_PATH)
     save_name: str = "best_model.pt"
 
