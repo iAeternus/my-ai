@@ -1,7 +1,7 @@
 [project]
-name = "iris-logistic-regression"
+name = "gnn"
 version = "0.1.0"
-description = "基于鸢尾花数据集的逻辑回归模型"
+description = "图神经网络"
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -10,13 +10,12 @@ authors = [
 ]
 
 dependencies = [
-    "matplotlib>=3.11.0",
-    "scikit-learn>=1.9.0",
-    "torch>=2.0",
+    "torch>=2.12.1",
+    "torch-geometric>=2.8.0",
 ]
 
 [project.scripts]
-iris-logistic-regression = "iris_logistic_regression:main"
+iris-logistic-regression = "gnn:main"
 
 [build-system]
 requires = ["uv_build>=0.11.16,<0.12.0"]
