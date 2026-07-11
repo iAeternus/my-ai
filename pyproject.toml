@@ -1,0 +1,13 @@
+[tool.uv.workspace]
+members = [
+    "packages/*",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "matplotlib>=3.11.0",
+    "scikit-learn>=1.9.0",
+]
