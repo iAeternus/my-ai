@@ -1,6 +1,6 @@
 # my-ai
 
-个人深度学习代码库，包含神经网络、GNN、知识图谱、多模态推荐等。
+我的深度学习代码库，包含神经网络、GNN、知识图谱、多模态推荐等。
 
 ## 目录结构
 
@@ -8,7 +8,7 @@
 my-ai/
 ├── packages/
 │   ├── iris_logistic_regression/   # 鸢尾花分类
-│   └── gnn/                        # 图神经网络 (开发中)
+│   └── gnn/                        # 图神经网络
 ├── pyproject.toml                  # uv workspace 根配置
 └── uv.lock
 ```
