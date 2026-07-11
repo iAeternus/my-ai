@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    setup_logging()
     args = parse_args()
     cfg = IrisConfig()
+    setup_logging(save_dir=cfg.output_dir)
 
     device = get_device()
     features, labels = load_iris(cfg.data_set_dir)
