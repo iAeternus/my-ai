@@ -12,6 +12,12 @@ LABEL_TO_ID = {
     "Iris-virginica": 2,
 }
 
+ID_TO_LABEL = {
+    0: "Iris-setosa",
+    1: "Iris-versicolor",
+    2: "Iris-virginica",
+}
+
 
 def load_iris(data_dir: Path) -> tuple[torch.Tensor, torch.Tensor]:
     data_file = data_dir / "bezdekIris.data"
@@ -47,7 +53,7 @@ def build_dataloader(
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
     X = features.numpy()
     y = labels.numpy()
-    
+
     # train / (val + test)
     X_train, X_temp, y_train, y_temp = train_test_split(
         X,
@@ -56,9 +62,11 @@ def build_dataloader(
         random_state=config.seed,
         stratify=y,
     )
-    
+
     # val / test
-    val_ratio = config.val_set / (config.val_set + (1.0 - config.train_set - config.val_set))
+    val_ratio = config.val_set / (
+        config.val_set + (1.0 - config.train_set - config.val_set)
+    )
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp,
         y_temp,
@@ -66,13 +74,13 @@ def build_dataloader(
         random_state=config.seed,
         stratify=y_temp,
     )
-    
+
     # Standardization
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
     X_test = scaler.transform(X_test)
-    
+
     train_dataset = TensorDataset(
         torch.from_numpy(X_train).float(),
         torch.from_numpy(y_train).long(),
@@ -87,9 +95,9 @@ def build_dataloader(
         torch.from_numpy(X_test).float(),
         torch.from_numpy(y_test).long(),
     )
-    
+
     pin_memory = device.type == "cuda"
-    
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.batch_size,

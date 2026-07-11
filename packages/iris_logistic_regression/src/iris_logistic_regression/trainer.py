@@ -189,3 +189,63 @@ class IrisTrainer:
     def _save_checkpoint(self, path: Path) -> None:
         torch.save(self._model.state_dict(), path)
         logger.info("模型已保存至 %s", path)
+
+    def load_checkpoint(self, model_path: Path) -> None:
+        if not model_path.exists():
+            raise FileNotFoundError(f"模型文件不存在: {model_path}")
+
+        state_dict = torch.load(
+            model_path,
+            map_location=self._device,
+            weights_only=True,
+        )
+        self._model.load_state_dict(state_dict)
+        logger.info("模型已加载: %s", model_path)
+
+    @torch.no_grad()
+    def predict(self, dataloader: DataLoader) -> tuple[torch.Tensor, torch.Tensor]:
+        """预测整个数据集"""
+        preds: list[torch.Tensor] = []
+        probs: list[torch.Tensor] = []
+
+        for features, _ in dataloader:
+            logits = self._predict_logits(features)
+            prob = torch.softmax(logits, dim=1)
+            pred = prob.argmax(dim=1)
+
+            preds.append(pred.cpu())
+            probs.append(prob.cpu())
+
+        return (
+            torch.cat(preds),
+            torch.cat(probs),
+        )
+
+    @torch.no_grad()
+    def predict_one(self, features: torch.Tensor) -> tuple[int, torch.Tensor]:
+        """预测单个样本
+
+        Args:
+            features: 输入特征，形状为 ``(4,)`` 或 ``(1, 4)``
+
+        Returns:
+            一个二元组：
+            - ``pred``：预测类别编号。
+            - ``prob``：各类别预测概率，形状为 ``(3,)``
+        """
+        logits = self._predict_logits(features)
+        prob = torch.softmax(logits, dim=1)
+        pred = int(prob.argmax(dim=1).item())
+
+        return pred, prob.squeeze(0).cpu()
+
+    @torch.no_grad()
+    def _predict_logits(self, features: torch.Tensor) -> torch.Tensor:
+        self._model.eval()
+
+        features = features.to(self._device)
+
+        if features.ndim == 1:
+            features = features.unsqueeze(0)
+
+        return self._model(features)
