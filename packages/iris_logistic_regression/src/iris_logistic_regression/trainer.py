@@ -49,7 +49,7 @@ class IrisTrainer:
         self._criterion: nn.Module = nn.CrossEntropyLoss()
 
         self._best_val_loss = float("inf")
-        self._save_path = self._config.save_dir / self._config.save_name
+        self._save_path = self._config.output_dir / self._config.save_name
         self._save_path.parent.mkdir(parents=True, exist_ok=True)
 
     def train(self) -> dict[str, list[float]]:

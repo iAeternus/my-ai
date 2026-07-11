@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from iris_logistic_regression.config import DATA_SET_PATH, OUTPUT_PATH, IrisConfig
+from iris_logistic_regression.config import IrisConfig
 from iris_logistic_regression.dataset import ID_TO_LABEL, build_dataloader, load_iris
 from iris_logistic_regression.model import IrisClassifier
 from iris_logistic_regression.parser import parse_args
@@ -18,7 +18,7 @@ def main() -> None:
     cfg = IrisConfig()
 
     device = get_device()
-    features, labels = load_iris(Path(DATA_SET_PATH))
+    features, labels = load_iris(cfg.data_set_dir)
     train_loader, val_loader, test_loader = build_dataloader(
         features, labels, cfg, device
     )
@@ -39,10 +39,10 @@ def main() -> None:
     if args.train:
         history = trainer.train()
         plot_train_history(
-            history, save=True, save_dir=Path(OUTPUT_PATH) / "history.png"
+            history, save=True, save_dir=cfg.output_dir / "history.png"
         )
     else:
-        trainer.load_checkpoint(cfg.save_dir / cfg.save_name)
+        trainer.load_checkpoint(cfg.output_dir / cfg.save_name)
         sample = features[0]
         pred, prob = trainer.predict_one(sample)
 
