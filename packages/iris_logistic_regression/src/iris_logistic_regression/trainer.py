@@ -48,7 +48,7 @@ class IrisTrainer:
 
         self._criterion: nn.Module = nn.CrossEntropyLoss()
 
-        self._best_val_acc = float("-inf")
+        self._best_val_loss = float("inf")
         self._save_path = self._config.save_dir / self._config.save_name
         self._save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -63,7 +63,7 @@ class IrisTrainer:
             "gpu_memory": [],
         }
 
-        early_stopping = EarlyStopping(patience=self._config.patience)
+        early_stopping = EarlyStopping(patience=self._config.patience, mode="min")
 
         for epoch in range(self._config.epochs):
             epoch_start = time.perf_counter()
@@ -75,8 +75,8 @@ class IrisTrainer:
 
             epoch_time = time.perf_counter() - epoch_start
 
-            if val_acc > self._best_val_acc:
-                self._best_val_acc = val_acc
+            if val_loss < self._best_val_loss:
+                self._best_val_loss = val_loss
                 self._save_checkpoint(self._save_path)
 
             history["loss"].append(train_loss)
@@ -106,18 +106,11 @@ class IrisTrainer:
                 epoch_time,
             )
 
-            if early_stopping.step(val_acc):
+            if early_stopping.step(val_loss):
                 logger.info("早停触发于第 %d 轮", epoch)
                 break
 
-        logger.info("加载最佳模型: %s", self._save_path)
-        self._model.load_state_dict(
-            torch.load(
-                self._save_path,
-                map_location=self._device,
-                weights_only=True,
-            )
-        )
+        self.load_checkpoint(self._save_path)
 
         test_acc = self.test()
         logger.info("测试准确率: %.4f", test_acc)
