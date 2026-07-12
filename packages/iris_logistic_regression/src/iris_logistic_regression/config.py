@@ -6,7 +6,7 @@ from pathlib import Path
 class IrisConfig:
     # Path
     data_set_dir: Path = Path("packages\\iris_logistic_regression\\data\\iris")
-    output_dir: Path = Path("packages\\iris_logistic_regression\\experiments")
+    output_dir: Path = Path("packages\\iris_logistic_regression\\outputs")
 
     # Dataset
     train_set: float = 0.8
