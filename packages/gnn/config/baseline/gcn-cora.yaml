@@ -1,6 +1,6 @@
 # GCN on Cora — 节点分类基线
 # 训练命令:
-#   uv run python -m gnn --config configs/gnn/baseline/gcn-cora.yaml
+#   uv run gnn --config packages\gnn\config\baseline\gcn-cora.yaml
 
 dataset:
   name: cora
