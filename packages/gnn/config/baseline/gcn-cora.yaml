@@ -1,0 +1,40 @@
+# GCN on Cora — 节点分类基线
+# 训练命令:
+#   uv run python -m gnn --config configs/gnn/baseline/gcn-cora.yaml
+
+dataset:
+  name: cora
+  root: packages/gnn/data
+
+model:
+  name: gcn
+  params:
+    hidden_dim: 16
+    dropout: 0.5
+    num_layers: 2
+
+optimizer:
+  name: adam
+  params:
+    lr: 0.01
+    weight_decay: 0.0005
+
+scheduler:
+  enabled: false
+
+train:
+  epochs: 100
+  early_stopping:
+    enabled: true
+    patience: 30
+    monitor: val_loss
+
+runtime:
+  device: auto
+  compile: auto
+
+experiment:
+  name_prefix: gcn-cora-baseline
+  save_dir: packages/gnn/outputs
+  seeds:
+    - 42
