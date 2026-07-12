@@ -1,4 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+import json
+from pathlib import Path
+from typing import Any
 
 
 @dataclass(slots=True, frozen=True)
@@ -61,3 +64,28 @@ class Config:
     train: TrainConfig = field(default_factory=TrainConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
+
+    def to_dict(self) -> dict[str, Any]:
+        """转换为普通字典"""
+        return asdict(self)
+
+    def to_json(
+        self,
+        path: str | Path,
+        *,
+        indent: int = 2,
+    ) -> None:
+        """保存配置为 JSON 文件
+
+        Args:
+            path:
+                输出文件路径
+
+            indent:
+                JSON 缩进
+        """
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)

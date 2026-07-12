@@ -34,7 +34,7 @@ runtime:
   compile: auto
 
 experiment:
-  name_prefix: gcn-cora-baseline
+  name_prefix: baseline
   save_dir: packages/gnn/outputs
   seeds:
     - 42

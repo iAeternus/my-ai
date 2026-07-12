@@ -1,5 +1,5 @@
-from gnn.config.loader import from_cli
-from gnn.config.parser import parse_args
+from gnn.config import from_cli
+from gnn.config import parse_args
 
 
 def main():
