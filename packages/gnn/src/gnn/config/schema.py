@@ -18,18 +18,63 @@ class DatasetConfig:
 
 @dataclass(slots=True, frozen=True)
 class ModelConfig:
+    """模型配置
+
+    Attributes:
+        name:
+            模型名称 (gcn、gat、gin、sage)
+
+        params:
+            - hidden_dim (int): 隐藏层维度
+            - num_layers (int): GNN 层数
+            - dropout (float): Dropout 概率
+            - heads (int): GAT 多头注意力头数
+            - aggr (str): GraphSAGE 聚合方式 (mean、sum、max)
+            - link_predictor (str): 链接预测器 (dot_product、mlp)
+    """
+
     name: str = "gcn"
     params: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
 class OptimizerConfig:
+    """优化器配置
+
+    Attributes:
+        name:
+            优化器名称 (adam、adamw、sgd)
+
+        params:
+            - lr (float): 学习率
+            - weight_decay (float): 权重衰减
+            - momentum (float): SGD 动量
+    """
+
     name: str = "adam"
     params: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
 class SchedulerConfig:
+    """学习率调度器配置
+
+    Attributes:
+        enabled:
+            是否启用学习率调度器
+
+        name:
+            调度器名称 (step、cosine、plateau)
+
+        params:
+            - step_size (int): StepLR 更新步长
+            - gamma (float): 学习率衰减系数
+            - T_max (int): CosineAnnealing 最大周期
+            - eta_min (float): CosineAnnealing 最小学习率
+            - factor (float): ReduceLROnPlateau 衰减系数
+            - patience (int): ReduceLROnPlateau 等待轮数
+    """
+
     enabled: bool = False
     name: str | None = None
     params: dict[str, object] = field(default_factory=dict)
