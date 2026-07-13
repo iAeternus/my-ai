@@ -2,6 +2,8 @@
 # 训练命令:
 #   uv run gnn --config packages\gnn\config\baseline\gcn-cora.yaml
 
+task: node_classification
+
 dataset:
   name: cora
   root: packages/gnn/data

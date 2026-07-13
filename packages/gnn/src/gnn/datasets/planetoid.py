@@ -1,4 +1,7 @@
+from typing import cast
+
 from torch_geometric.datasets import Planetoid
+from torch_geometric.data import Data
 
 PLANETOID_DATASETS = {
     "cora": "Cora",
@@ -7,10 +10,11 @@ PLANETOID_DATASETS = {
 }
 
 
-def load_planetoid(name: str, root: str = "data"):
+def load_planetoid(name: str, root: str = "data") -> Data:
     if name not in PLANETOID_DATASETS:
         raise ValueError(
             f"Unsupported dataset: {name}. " f"Available: {list(PLANETOID_DATASETS)}"
         )
 
-    return Planetoid(root=root, name=PLANETOID_DATASETS[name])
+    dataset = Planetoid(root=root, name=PLANETOID_DATASETS[name])
+    return cast(Data, dataset[0])
