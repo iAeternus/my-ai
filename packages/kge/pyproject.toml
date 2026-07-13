@@ -1,0 +1,23 @@
+[project]
+name = "kge"
+version = "0.1.0"
+description = "KGE (Knowledge Graph Embedding)"
+readme = "README.md"
+requires-python = ">=3.13"
+
+authors = [
+    { name = "Ricky", email = "w_ziwei2004@163.com" }
+]
+
+dependencies = [
+    "ipykernel>=7.3.0",
+    "pyyaml>=6.0.3",
+    "torch>=2.12.1",
+]
+
+[project.scripts]
+kge = "kge.main:main"
+
+[build-system]
+requires = ["uv_build>=0.11.16,<0.12.0"]
+build-backend = "uv_build"
