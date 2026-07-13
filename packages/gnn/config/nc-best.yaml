@@ -6,12 +6,12 @@
 #   PubMed:  GAT (~79%), GCN (~79%)
 #
 # 使用方式：
-#   uv run gnn --config packages/gnn/config/app/nc-best.yaml                    # Cora + GCN
-#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --model gat        # 换 GAT
-#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --dataset pubmed   # PubMed
+#   uv run gnn --config packages/gnn/config/nc-best.yaml                    # Cora + GCN
+#   uv run gnn --config packages/gnn/config/nc-best.yaml --model gat        # 换 GAT
+#   uv run gnn --config packages/gnn/config/nc-best.yaml --dataset pubmed   # PubMed
 #
 # 启用 DropEdge + LayerNorm 以增强抗过拟合：
-#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --hidden-dim 64
+#   uv run gnn --config packages/gnn/config/nc-best.yaml --hidden-dim 64
 
 task: node_classification
 
@@ -25,8 +25,8 @@ model:
     hidden_dim: 64
     num_layers: 2
     dropout: 0.5
-    norm: batch         # batch | layer —— 小图推荐 layer
-    dropedge: 0.0       # 0.0 ~ 0.2 —— 结构正则化，过拟合严重时设为 0.1
+    # norm 默认 batch（builder.py），小图推荐 layer
+    # dropedge 默认 0.0（builder.py），过拟合严重时设为 0.1
 
 optimizer:
   name: adamw            # AdamW 解耦权重衰减，泛化更好

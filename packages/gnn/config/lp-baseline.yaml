@@ -1,10 +1,19 @@
-# 引用推荐 — GCN on CiteSeer
-# 训练: uv run gnn --config packages/gnn/config/baseline/gcn-citeseer-link-pred.yaml
+# 链接预测 — 基线配置
+#
+# 通过 CLI 覆盖模型和数据集以运行不同的实验组合：
+#   uv run gnn --config config/lp-baseline.yaml --model gcn --dataset cora
+#   uv run gnn --config config/lp-baseline.yaml --model gat --dataset pubmed
+#
+# 可用模型: gcn | gat | gin | sage
+# 可用数据集: cora | citeseer | pubmed
+#
+# 链接预测器默认为 dot_product，由 builder.py 自动提供。
+# 如需使用 MLP 预测器，在 model.params 中设置 link_predictor: mlp。
 
 task: link_prediction
 
 dataset:
-  name: citeseer
+  name: cora
   root: packages/gnn/data
 
 model:
@@ -13,7 +22,6 @@ model:
     hidden_dim: 64
     num_layers: 2
     dropout: 0.5
-    link_predictor: dot_product
 
 optimizer:
   name: adam

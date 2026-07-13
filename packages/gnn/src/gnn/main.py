@@ -1,3 +1,4 @@
+import sys
 import logging
 from typing import cast
 
@@ -71,8 +72,12 @@ def main():
             train_data, val_data, test_data, run_dir / "checkpoints"
         )
 
-        # 保存产物
-        exp.save_history(history)
+        # 保存产物 —— 多 seed 时各 seed 独立保存
+        if multi_seed:
+            exp.save_history(history, run_dir=run_dir)
+            exp.plot_metrics(history, run_dir=run_dir)
+        else:
+            exp.save_history(history)
 
         # 提取最终测试指标
         results[seed] = {
@@ -86,9 +91,21 @@ def main():
         key = "test_acc" if cfg.task == TaskType.NODE_CLASSIFICATION else "test_auc"
         exp.summarize_seeds({s: r.get(key, 0) for s, r in results.items()})
     else:
-        exp.save_metrics(results.get(cfg.experiment.seeds[0], {}))
-
-    exp.plot_metrics(history)
+        seed = cfg.experiment.seeds[0]
+        metrics = results.get(seed, {})
+        if not metrics:
+            # fallback: 从 history 中取最佳 val 指标
+            monitor = cfg.train.early_stopping.monitor
+            if monitor in history:
+                best_value = (
+                    max(history[monitor])
+                    if "acc" in monitor or "auc" in monitor
+                    else min(history[monitor])
+                )
+                metrics = {f"best_{monitor}": best_value}
+        exp.save_metrics(metrics)
+        exp.plot_metrics(history)
+    logger.info("原始命令: %s", sys.argv)
     logger.info("实验完成: %s", exp.root_dir)
 
 

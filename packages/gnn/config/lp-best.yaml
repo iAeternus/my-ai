@@ -1,9 +1,9 @@
 # 链接预测 — 最佳实践配置
 #
 # 使用方式：
-#   uv run gnn --config packages/gnn/config/app/lp-best.yaml                    # Cora + GCN
-#   uv run gnn --config packages/gnn/config/app/lp-best.yaml --model gat        # 换 GAT
-#   uv run gnn --config packages/gnn/config/app/lp-best.yaml --dataset pubmed   # PubMed
+#   uv run gnn --config packages/gnn/config/lp-best.yaml                    # Cora + GCN
+#   uv run gnn --config packages/gnn/config/lp-best.yaml --model gat        # 换 GAT
+#   uv run gnn --config packages/gnn/config/lp-best.yaml --dataset pubmed   # PubMed
 #
 # 链接预测器选择：
 #   dot_product: 轻量、快速，适合大多数场景
@@ -21,9 +21,9 @@ model:
     hidden_dim: 64
     num_layers: 2
     dropout: 0.5
-    link_predictor: dot_product   # dot_product | mlp
-    norm: batch
-    dropedge: 0.0
+    # link_predictor 默认 dot_product（builder.py），复杂图可设为 mlp
+    # norm 默认 batch（builder.py）
+    # dropedge 默认 0.0（builder.py）
 
 optimizer:
   name: adamw

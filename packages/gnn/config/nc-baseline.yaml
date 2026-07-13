@@ -1,0 +1,53 @@
+# 节点分类 — 基线配置
+#
+# 通过 CLI 覆盖模型和数据集以运行不同的实验组合：
+#   uv run gnn --config config/nc-baseline.yaml --model gcn --dataset cora
+#   uv run gnn --config config/nc-baseline.yaml --model gat --dataset pubmed
+#
+# 可用模型: gcn | gat | gin | sage
+# 可用数据集: cora | citeseer | pubmed
+#
+# 模型专属参数（heads、aggr 等）由 builder.py 自动提供默认值，无需在 YAML 中声明。
+# 如需覆盖，可在 model.params 中显式设置。
+
+task: node_classification
+
+dataset:
+  name: cora          # 通过 --dataset 覆盖
+  root: packages/gnn/data
+
+model:
+  name: gcn           # 通过 --model 覆盖
+  params:
+    hidden_dim: 64
+    num_layers: 2
+    dropout: 0.5
+
+optimizer:
+  name: adam
+  params:
+    lr: 0.01
+    weight_decay: 0.0005
+
+scheduler:
+  enabled: true
+  name: plateau
+  params:
+    factor: 0.5
+    patience: 20
+
+train:
+  epochs: 200
+  early_stopping:
+    enabled: true
+    patience: 50
+    monitor: val_acc
+
+runtime:
+  device: auto
+  compile: auto
+
+experiment:
+  name_prefix: nc
+  save_dir: packages/gnn/outputs
+  seeds: [42, 123, 456]

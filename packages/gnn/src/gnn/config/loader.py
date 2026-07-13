@@ -79,21 +79,23 @@ def apply_cli_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> No
 
     仅覆盖非 None 的项
     """
+    
+    # 将 CLI 参数名映射为嵌套字典路径（逐层 key 列表）
     _OVERRIDE_MAP: dict[str, list[str]] = {
         "task": ["task"],
-        "dataset": ["dataset.name"],
-        "root": ["dataset.root"],
-        "model": ["model.name"],
-        "hidden_dim": ["model.params", "hidden_dim"],
-        "dropout": ["model.params", "dropout"],
-        "num_layers": ["model.params", "num_layers"],
-        "lr": ["optimizer.params", "lr"],
-        "weight_decay": ["optimizer.params", "weight_decay"],
-        "epochs": ["train.epochs"],
-        "patience": ["train.early_stopping.patience"],
-        "device": ["runtime.device"],
-        "compile": ["runtime.compile"],
-        "seeds": ["experiment.seeds"],
+        "dataset": ["dataset", "name"],
+        "root": ["dataset", "root"],
+        "model": ["model", "name"],
+        "hidden_dim": ["model", "params", "hidden_dim"],
+        "dropout": ["model", "params", "dropout"],
+        "num_layers": ["model", "params", "num_layers"],
+        "lr": ["optimizer", "params", "lr"],
+        "weight_decay": ["optimizer", "params", "weight_decay"],
+        "epochs": ["train", "epochs"],
+        "patience": ["train", "early_stopping", "patience"],
+        "device": ["runtime", "device"],
+        "compile": ["runtime", "compile"],
+        "seeds": ["experiment", "seeds"],
     }
 
     for cli_key, value in overrides.items():
@@ -106,7 +108,12 @@ def apply_cli_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> No
 
 
 def _set_nested(d: dict, keys: list[str], value: Any) -> None:
-    """按 key 路径设置嵌套字典值，中间层不存在则自动创建"""
+    """按 key 路径设置嵌套字典值，中间层不存在则自动创建。
+
+    Example:
+        _set_nested(d, ["model", "params", "hidden_dim"], 128)
+        # => d["model"]["params"]["hidden_dim"] = 128
+    """
     for key in keys[:-1]:
         d = d.setdefault(key, {})
     d[keys[-1]] = value
