@@ -117,23 +117,3 @@ def _set_nested(d: dict, keys: list[str], value: Any) -> None:
     for key in keys[:-1]:
         d = d.setdefault(key, {})
     d[keys[-1]] = value
-
-
-def validate_config(cfg: Config) -> None:
-    """校验任务与数据集的兼容性"""
-    PLANETOID_NAMES = {"cora", "citeseer", "pubmed"}
-    if cfg.dataset.name not in PLANETOID_NAMES:
-        return  # 非 Planetoid 不做校验
-
-    if cfg.task not in (TaskType.NODE_CLASSIFICATION, TaskType.LINK_PREDICTION):
-        raise ValueError(
-            f"Planetoid 数据集 '{cfg.dataset.name}' 不支持任务 '{cfg.task.value}'。"
-            f"仅支持: node_classification, link_prediction"
-        )
-
-    if cfg.train.early_stopping.monitor not in MONITOR_MODES.keys():
-        raise ValueError(
-            "Unsupported early_stopping.monitor: "
-            f"{cfg.train.early_stopping.monitor!r}. "
-            f"Available: {', '.join(MONITOR_MODES.keys())}"
-        )

@@ -2,7 +2,6 @@ from .loader import (
     from_dict,
     from_yaml,
     from_cli,
-    validate_config,
 )
 
 from .parser import (
@@ -42,5 +41,4 @@ __all__ = [
     # parser
     "build_parser",
     "parse_args",
-    "validate_config",
 ]

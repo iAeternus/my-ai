@@ -2,7 +2,7 @@ import sys
 import logging
 from typing import cast
 
-from gnn.config import from_cli, parse_args, validate_config
+from gnn.config import from_cli, parse_args
 from gnn.config.schema import TaskType
 from gnn.datasets import load_planetoid
 from gnn.datasets.splitter import split_link_prediction_data
@@ -24,7 +24,6 @@ def main():
     # 配置
     args = parse_args()
     cfg = from_cli(args.config, overrides=vars(args))
-    validate_config(cfg)
 
     # 加载数据
     data = load_planetoid(cfg.dataset.name, cfg.dataset.root)

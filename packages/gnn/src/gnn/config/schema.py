@@ -3,6 +3,7 @@ from enum import Enum
 import json
 from pathlib import Path
 from typing import Any
+from gnn.utils.early_stopping import MONITOR_MODES
 
 
 class TaskType(str, Enum):
@@ -96,6 +97,7 @@ class EarlyStoppingConfig:
         monitor:
             监控指标 (val_loss、val_acc、val_auc、val_ap)
     """
+
     enabled: bool = True
     patience: int = 30
     monitor: str = "val_loss"
@@ -131,6 +133,9 @@ class Config:
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
 
+    def __post_init__(self) -> None:
+        self._validate()
+
     def to_dict(self) -> dict[str, Any]:
         """转换为普通字典"""
         return asdict(self)
@@ -155,3 +160,21 @@ class Config:
 
         with path.open("w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
+
+    def _validate(self) -> None:
+        PLANETOID_NAMES = {"cora", "citeseer", "pubmed"}
+        if self.dataset.name not in PLANETOID_NAMES:
+            return  # 非 Planetoid 不做校验
+
+        if self.task not in (TaskType.NODE_CLASSIFICATION, TaskType.LINK_PREDICTION):
+            raise ValueError(
+                f"Planetoid 数据集 '{cfg.dataset.name}' 不支持任务 '{cfg.task.value}'。"
+                f"仅支持: node_classification, link_prediction"
+            )
+
+        if self.train.early_stopping.monitor not in MONITOR_MODES.keys():
+            raise ValueError(
+                "Unsupported early_stopping.monitor: "
+                f"{cfg.train.early_stopping.monitor!r}. "
+                f"Available: {', '.join(MONITOR_MODES.keys())}"
+            )
