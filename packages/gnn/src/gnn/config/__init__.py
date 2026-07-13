@@ -2,6 +2,7 @@ from .loader import (
     from_dict,
     from_yaml,
     from_cli,
+    validate_config,
 )
 
 from .parser import (
@@ -11,6 +12,7 @@ from .parser import (
 
 from .schema import (
     Config,
+    TaskType,
     DatasetConfig,
     EarlyStoppingConfig,
     ExperimentConfig,
@@ -24,6 +26,7 @@ from .schema import (
 __all__ = [
     # schema
     "Config",
+    "TaskType",
     "DatasetConfig",
     "ModelConfig",
     "OptimizerConfig",
@@ -39,4 +42,5 @@ __all__ = [
     # parser
     "build_parser",
     "parse_args",
+    "validate_config",
 ]

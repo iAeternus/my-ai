@@ -1,7 +1,13 @@
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 import json
 from pathlib import Path
 from typing import Any
+
+
+class TaskType(str, Enum):
+    NODE_CLASSIFICATION = "node_classification"
+    LINK_PREDICTION = "link_prediction"
 
 
 @dataclass(slots=True, frozen=True)
@@ -57,6 +63,7 @@ class ExperimentConfig:
 
 @dataclass(slots=True, frozen=True)
 class Config:
+    task: TaskType = TaskType.NODE_CLASSIFICATION
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)

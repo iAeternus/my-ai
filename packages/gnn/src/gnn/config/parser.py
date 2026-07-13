@@ -12,6 +12,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="yaml configuration file",
     )
 
+    # task
+    parser.add_argument(
+        "--task",
+        type=str,
+        default=None,
+        choices=["node_classification", "link_prediction"],
+        help="override task type",
+    )
+
     # dataset
     parser.add_argument(
         "--dataset",
