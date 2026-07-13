@@ -82,6 +82,18 @@ class SchedulerConfig:
 
 @dataclass(slots=True, frozen=True)
 class EarlyStoppingConfig:
+    """早停配置
+
+    Attributes:
+        enabled:
+            是否启用早停
+
+        patience:
+            连续无改善的容忍轮数
+
+        monitor:
+            监控指标 (val_loss、val_acc、val_auc、val_ap)
+    """
     enabled: bool = True
     patience: int = 30
     monitor: str = "val_loss"

@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
+from gnn.utils.early_stopping import MONITOR_MODES
 import yaml
 
 from gnn.config.schema import (
@@ -121,4 +122,11 @@ def validate_config(cfg: Config) -> None:
         raise ValueError(
             f"Planetoid 数据集 '{cfg.dataset.name}' 不支持任务 '{cfg.task.value}'。"
             f"仅支持: node_classification, link_prediction"
+        )
+
+    if cfg.train.early_stopping.monitor not in MONITOR_MODES.keys():
+        raise ValueError(
+            "Unsupported early_stopping.monitor: "
+            f"{cfg.train.early_stopping.monitor!r}. "
+            f"Available: {', '.join(MONITOR_MODES.keys())}"
         )

@@ -1,3 +1,4 @@
+import logging
 from typing import cast
 
 from gnn.config import from_cli, parse_args, validate_config
@@ -6,12 +7,15 @@ from gnn.datasets import load_planetoid
 from gnn.datasets.splitter import split_link_prediction_data
 from gnn.experiments import ExperimentManager
 from gnn.models.builder import build_model
+from gnn.trainer.factory import create_trainer
 from gnn.utils.device import get_device
 from gnn.utils.logging import setup_logging
 
 import torch
 from torch import Tensor
 from torch_geometric.data import Data
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -58,7 +62,30 @@ def main():
         model = build_model(cfg, num_features=x.shape[1], num_classes=num_classes)
 
         # 训练
-        ...
+        trainer = create_trainer(cfg, model, device)
+        history = trainer.train(
+            train_data, val_data, test_data, run_dir / "checkpoints"
+        )
+
+        # 保存产物
+        exp.save_history(history)
+
+        # 提取最终测试指标
+        results[seed] = {
+            k: v[-1]
+            for k, v in history.items()
+            if k.startswith("test_") and v and isinstance(v, list)
+        }
+
+    # 汇总
+    if multi_seed:
+        key = "test_acc" if cfg.task == TaskType.NODE_CLASSIFICATION else "test_auc"
+        exp.summarize_seeds({s: r.get(key, 0) for s, r in results.items()})
+    else:
+        exp.save_metrics(results.get(cfg.experiment.seeds[0], {}))
+
+    exp.plot_metrics(history)
+    logger.info("实验完成: %s", exp.root_dir)
 
 
 if __name__ == "__main__":

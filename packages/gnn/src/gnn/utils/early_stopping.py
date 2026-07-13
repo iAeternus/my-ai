@@ -2,6 +2,13 @@ import logging
 
 logger = logging.getLogger("graph_learning")
 
+MONITOR_MODES = {
+    "val_loss": "min",
+    "val_acc": "max",
+    "val_auc": "max",
+    "val_ap": "max",
+}
+
 
 class EarlyStopping:
     """早停
@@ -26,11 +33,17 @@ class EarlyStopping:
         self.mode = mode
         self._best: float | None = None
         self._counter: int = 0
+        self._improved: bool = False
 
     @property
     def stopped(self) -> bool:
         """是否应停止训练"""
         return self._counter >= self.patience
+
+    @property
+    def improved(self) -> bool:
+        """最近一次 step 是否产生了新的最佳值"""
+        return self._improved
 
     def step(self, value: float) -> bool:
         """用新的指标值更新追踪器
@@ -42,14 +55,14 @@ class EarlyStopping:
             若应停止训练则返回 ``True``，否则返回 ``False``
         """
         if self._best is None:
-            self._best = value
-            return False
-
-        improved: bool
-        if self.mode == "max":
-            improved = value > self._best + self.min_delta
+            improved = True
         else:
-            improved = value < self._best - self.min_delta
+            if self.mode == "max":
+                improved = value > self._best + self.min_delta
+            else:
+                improved = value < self._best - self.min_delta
+
+        self._improved = improved
 
         if improved:
             self._best = value

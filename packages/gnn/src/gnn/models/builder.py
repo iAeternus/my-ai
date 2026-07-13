@@ -1,6 +1,6 @@
 """模型组装工厂"""
 
-from gnn.utils.typing import get_config
+from gnn.utils.typing import get_param
 import torch
 from torch import nn, Tensor
 from gnn.config.schema import Config, TaskType
@@ -36,27 +36,27 @@ def build_model(cfg: Config, num_features: int, num_classes: int) -> GNNModel:
     encoder_cls = ENCODER_REGISTRY[cfg.model.name]
     encoder_params = {
         "in_dim": num_features,
-        "hidden_dim": get_config(cfg.model.params, "hidden_dim", 64),
-        "num_layers": get_config(cfg.model.params, "num_layers", 2),
-        "dropout": get_config(cfg.model.params, "dropout", 0.5),
+        "hidden_dim": get_param(cfg.model.params, "hidden_dim", 64),
+        "num_layers": get_param(cfg.model.params, "num_layers", 2),
+        "dropout": get_param(cfg.model.params, "dropout", 0.5),
     }
     if cfg.model.name == "gat":
-        encoder_params["heads"] = get_config(cfg.model.params, "heads", 8)
+        encoder_params["heads"] = get_param(cfg.model.params, "heads", 8)
     if cfg.model.name == "sage":
-        encoder_params["aggr"] = get_config(cfg.model.params, "aggr", "mean")
+        encoder_params["aggr"] = get_param(cfg.model.params, "aggr", "mean")
 
     encoder = encoder_cls(**encoder_params)
 
     # head
-    hidden_dim = get_config(cfg.model.params, "hidden_dim", 64)
+    hidden_dim = get_param(cfg.model.params, "hidden_dim", 64)
     if cfg.task == TaskType.NODE_CLASSIFICATION:
         head = NodeClassificationHead(
             hidden_dim=hidden_dim,
             num_classes=num_classes,
-            dropout=get_config(cfg.model.params, "dropout", 0.5),
+            dropout=get_param(cfg.model.params, "dropout", 0.5),
         )
     elif cfg.task == TaskType.LINK_PREDICTION:
-        predictor_type = get_config(cfg.model.params, "link_predictor", "dot_product")
+        predictor_type = get_param(cfg.model.params, "link_predictor", "dot_product")
         if predictor_type == "mlp":
             head = LinkPredictionMLPHead(hidden_dim=hidden_dim)
         else:
