@@ -1,18 +1,19 @@
-# 论文主题分类 — GCN on Cora
-# 训练: uv run gnn --config packages/gnn/config/baseline/gcn-cora.yaml
+# 引用推荐 — GIN on Cora
+# 训练: uv run gnn --config packages/gnn/config/baseline/gin-cora-link-pred.yaml
 
-task: node_classification
+task: link_prediction
 
 dataset:
   name: cora
   root: packages/gnn/data
 
 model:
-  name: gcn
+  name: gin
   params:
     hidden_dim: 64
     num_layers: 2
     dropout: 0.5
+    link_predictor: dot_product
 
 optimizer:
   name: adam
@@ -31,14 +32,14 @@ train:
   epochs: 200
   early_stopping:
     enabled: true
-    patience: 50
-    monitor: val_acc
+    patience: 30
+    monitor: val_auc
 
 runtime:
   device: auto
   compile: auto
 
 experiment:
-  name_prefix: nc
+  name_prefix: lp
   save_dir: packages/gnn/outputs
   seeds: [42, 123, 456]

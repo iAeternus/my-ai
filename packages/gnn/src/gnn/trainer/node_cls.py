@@ -16,7 +16,7 @@ class NodeClassificationTrainer(BaseTrainer):
 
     def __init__(self, cfg: Config, model: nn.Module, device: torch.device) -> None:
         super().__init__(cfg, model, device)
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     @property
     @override
@@ -40,6 +40,7 @@ class NodeClassificationTrainer(BaseTrainer):
         logits = self.model(x, edge_index)
         loss = self.criterion(logits[data.train_mask], y[data.train_mask])
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
         self.optimizer.step()
 
         acc = accuracy(logits[data.train_mask], y[data.train_mask])

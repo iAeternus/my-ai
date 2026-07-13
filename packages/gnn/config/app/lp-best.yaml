@@ -1,0 +1,56 @@
+# 链接预测 — 最佳实践配置
+#
+# 使用方式：
+#   uv run gnn --config packages/gnn/config/app/lp-best.yaml                    # Cora + GCN
+#   uv run gnn --config packages/gnn/config/app/lp-best.yaml --model gat        # 换 GAT
+#   uv run gnn --config packages/gnn/config/app/lp-best.yaml --dataset pubmed   # PubMed
+#
+# 链接预测器选择：
+#   dot_product: 轻量、快速，适合大多数场景
+#   mlp:         更强表达能力，适合复杂图，需在 model.params 中设置 link_predictor: mlp
+
+task: link_prediction
+
+dataset:
+  name: cora
+  root: packages/gnn/data
+
+model:
+  name: gcn
+  params:
+    hidden_dim: 64
+    num_layers: 2
+    dropout: 0.5
+    link_predictor: dot_product   # dot_product | mlp
+    norm: batch
+    dropedge: 0.0
+
+optimizer:
+  name: adamw
+  params:
+    lr: 0.01
+    weight_decay: 0.001
+
+scheduler:
+  enabled: true
+  name: plateau
+  params:
+    factor: 0.5
+    patience: 15
+    min_lr: 1.0e-5
+
+train:
+  epochs: 200
+  early_stopping:
+    enabled: true
+    patience: 40
+    monitor: val_auc
+
+runtime:
+  device: auto
+  compile: auto
+
+experiment:
+  name_prefix: lp_best
+  save_dir: packages/gnn/outputs
+  seeds: [42, 123, 456, 789, 1024]

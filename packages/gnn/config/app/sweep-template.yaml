@@ -1,0 +1,60 @@
+# 超参数搜索模板
+#
+# 此文件用作 wandb / optuna / 手动网格搜索的参考基线。
+# 标记 [sweep] 的参数建议纳入搜索空间。
+#
+# 典型搜索空间（Cora 节点分类）:
+#   hidden_dim:    [32, 64, 128, 256]
+#   num_layers:    [1, 2, 3]
+#   dropout:       [0.3, 0.5, 0.7]
+#   lr:            [0.001, 0.005, 0.01, 0.05]
+#   weight_decay:  [0.0, 5e-4, 1e-3, 5e-3]
+#   dropedge:      [0.0, 0.1, 0.2]
+#   norm:          [batch, layer]
+#   heads (GAT):   [4, 8, 12]
+#   aggr (SAGE):   [mean, sum, max]
+
+task: node_classification           # [sweep] node_classification | link_prediction
+
+dataset:
+  name: cora                        # cora | citeseer | pubmed
+  root: packages/gnn/data
+
+model:
+  name: gcn                         # [sweep] gcn | gat | gin | sage
+  params:
+    hidden_dim: 64                  # [sweep]
+    num_layers: 2                   # [sweep]
+    dropout: 0.5                    # [sweep]
+    norm: batch                     # [sweep] batch | layer
+    dropedge: 0.0                   # [sweep] 0.0 ~ 0.2
+
+optimizer:
+  name: adamw                       # [sweep] adam | adamw
+  params:
+    lr: 0.01                        # [sweep]
+    weight_decay: 0.001             # [sweep]
+
+scheduler:
+  enabled: true
+  name: plateau
+  params:
+    factor: 0.5                     # [sweep]
+    patience: 20                    # [sweep]
+    min_lr: 1.0e-5
+
+train:
+  epochs: 300
+  early_stopping:
+    enabled: true
+    patience: 80
+    monitor: val_acc                # val_acc (NC) | val_auc (LP)
+
+runtime:
+  device: auto
+  compile: auto
+
+experiment:
+  name_prefix: sweep
+  save_dir: packages/gnn/outputs
+  seeds: [42, 123, 456]

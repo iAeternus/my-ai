@@ -1,5 +1,5 @@
-# 论文主题分类 — GCN on Cora
-# 训练: uv run gnn --config packages/gnn/config/baseline/gcn-cora.yaml
+# 论文主题分类 — SAGE on Cora
+# 训练: uv run gnn --config packages/gnn/config/baseline/sage-cora.yaml
 
 task: node_classification
 
@@ -8,11 +8,12 @@ dataset:
   root: packages/gnn/data
 
 model:
-  name: gcn
+  name: sage
   params:
     hidden_dim: 64
     num_layers: 2
     dropout: 0.5
+    aggr: mean
 
 optimizer:
   name: adam

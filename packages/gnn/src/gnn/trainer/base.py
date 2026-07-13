@@ -10,7 +10,7 @@ from torch_geometric.data import Data
 
 from gnn.config import Config
 from gnn.utils.early_stopping import EarlyStopping
-from gnn.utils.typing import pop_config
+from gnn.utils.typing import pop_param
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +36,26 @@ class BaseTrainer(ABC):
 
         # optimizer
         opt_params: dict[str, Any] = dict(cfg.optimizer.params)
-        lr = pop_config(opt_params, "lr", 0.01)
-        weight_decay = pop_config(opt_params, "weight_decay", 0.0)
-        self.optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=lr,
-            weight_decay=weight_decay,
-            **opt_params,
-        )
+        lr = pop_param(opt_params, "lr", 0.01)
+        weight_decay = pop_param(opt_params, "weight_decay", 0.0)
+
+        optimizer_cls = _get_optimizer_cls(cfg.optimizer.name)
+        if cfg.optimizer.name == "sgd":
+            momentum = pop_param(opt_params, "momentum", 0.9)
+            self.optimizer = optimizer_cls(
+                self.model.parameters(),
+                lr=lr,
+                weight_decay=weight_decay,
+                momentum=momentum,
+                **opt_params,
+            )
+        else:
+            self.optimizer = optimizer_cls(
+                self.model.parameters(),
+                lr=lr,
+                weight_decay=weight_decay,
+                **opt_params,
+            )
 
         # scheduler
         self.scheduler = None
@@ -136,6 +148,8 @@ class BaseTrainer(ABC):
         # 加载最佳模型并测试
         self._load_best()
         test_loss, test_metrics = self._eval(test_data, prefix="test")
+        for k, v in test_metrics.items():
+            history.setdefault(k, []).append(v)
         logger.info("测试结果: %s", test_metrics)
         return history
 
@@ -147,3 +161,15 @@ class BaseTrainer(ABC):
                 weights_only=True,
             )
             self.model.load_state_dict(state)
+
+
+def _get_optimizer_cls(name: str) -> type[torch.optim.Optimizer]:
+    """根据配置名称返回优化器类"""
+    _OPTIMIZERS: dict[str, type[torch.optim.Optimizer]] = {
+        "adam": torch.optim.Adam,
+        "adamw": torch.optim.AdamW,
+        "sgd": torch.optim.SGD,
+    }
+    if name not in _OPTIMIZERS:
+        raise ValueError(f"未知的优化器: {name!r}，可选: {list(_OPTIMIZERS.keys())}")
+    return _OPTIMIZERS[name]

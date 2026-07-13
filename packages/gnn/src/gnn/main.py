@@ -12,6 +12,7 @@ from gnn.utils.device import get_device
 from gnn.utils.logging import setup_logging
 
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch_geometric.data import Data
 
@@ -26,6 +27,9 @@ def main():
 
     # 加载数据
     data = load_planetoid(cfg.dataset.name, cfg.dataset.root)
+
+    # 输入特征归一化（Row-wise L2，GNN 标准预处理）
+    data.x = F.normalize(cast(Tensor, data.x), p=2, dim=1)
 
     # 实验目录
     exp = ExperimentManager(cfg)

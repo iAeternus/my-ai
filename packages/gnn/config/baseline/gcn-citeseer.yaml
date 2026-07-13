@@ -1,10 +1,10 @@
-# 论文主题分类 — GCN on Cora
-# 训练: uv run gnn --config packages/gnn/config/baseline/gcn-cora.yaml
+# 论文主题分类 — GCN on CiteSeer
+# 训练: uv run gnn --config packages/gnn/config/baseline/gcn-citeseer.yaml
 
 task: node_classification
 
 dataset:
-  name: cora
+  name: citeseer
   root: packages/gnn/data
 
 model:

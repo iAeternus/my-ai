@@ -53,6 +53,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--num-layers",
+        dest="num_layers",
+        type=int,
+        default=None,
+        help="override number of GNN layers",
+    )
+
+    parser.add_argument(
         "--dropout",
         type=float,
         default=None,

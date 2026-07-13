@@ -8,5 +8,5 @@ def get_param(params: dict[str, object], key: str, default: T) -> T:
     return cast(T, value)
 
 
-def pop_config(params: dict[str, object], key: str, default: T) -> T:
+def pop_param(params: dict[str, object], key: str, default: T) -> T:
     return cast(T, params.pop(key, default))

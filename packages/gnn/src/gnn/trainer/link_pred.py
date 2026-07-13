@@ -4,22 +4,24 @@ from gnn.utils.metrics import binary_ap, binary_auc
 import torch
 from torch import Tensor, nn
 from gnn.trainer.base import BaseTrainer
+from gnn.config import Config
+from gnn.utils.early_stopping import MONITOR_MODES
 
 
 class LinkPredictionTrainer(BaseTrainer):
     """链接预测训练器"""
 
-    def __init__(self, cfg, model, device):
+    def __init__(self, cfg: Config, model: nn.Module, device: torch.device) -> None:
         super().__init__(cfg, model, device)
         self.criterion = nn.BCEWithLogitsLoss()
 
     @property
     def _monitor_mode(self) -> str:
-        return "max"
+        return MONITOR_MODES.get(self.cfg.train.early_stopping.monitor, "max")
 
     @property
     def _monitor_metric(self) -> str:
-        return "val_auc"
+        return self.cfg.train.early_stopping.monitor
 
     def _train_step(self, data) -> tuple[float, dict[str, float]]:
         self.model.train()
@@ -33,6 +35,7 @@ class LinkPredictionTrainer(BaseTrainer):
         logits = self.model(x, edge_index, edge_label_index=edge_label_index)
         loss = self.criterion(logits, edge_label)
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
         self.optimizer.step()
 
         auc = binary_auc(edge_label.cpu(), logits.detach().cpu())

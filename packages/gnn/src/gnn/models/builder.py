@@ -39,6 +39,8 @@ def build_model(cfg: Config, num_features: int, num_classes: int) -> GNNModel:
         "hidden_dim": get_param(cfg.model.params, "hidden_dim", 64),
         "num_layers": get_param(cfg.model.params, "num_layers", 2),
         "dropout": get_param(cfg.model.params, "dropout", 0.5),
+        "norm": get_param(cfg.model.params, "norm", "batch"),
+        "dropedge": get_param(cfg.model.params, "dropedge", 0.0),
     }
     if cfg.model.name == "gat":
         encoder_params["heads"] = get_param(cfg.model.params, "heads", 8)
@@ -58,7 +60,10 @@ def build_model(cfg: Config, num_features: int, num_classes: int) -> GNNModel:
     elif cfg.task == TaskType.LINK_PREDICTION:
         predictor_type = get_param(cfg.model.params, "link_predictor", "dot_product")
         if predictor_type == "mlp":
-            head = LinkPredictionMLPHead(hidden_dim=hidden_dim)
+            head = LinkPredictionMLPHead(
+                hidden_dim=hidden_dim,
+                dropout=get_param(cfg.model.params, "dropout", 0.5),
+            )
         else:
             head = LinkPredictionHead()
     else:

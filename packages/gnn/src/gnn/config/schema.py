@@ -31,6 +31,8 @@ class ModelConfig:
             - heads (int): GAT 多头注意力头数
             - aggr (str): GraphSAGE 聚合方式 (mean、sum、max)
             - link_predictor (str): 链接预测器 (dot_product、mlp)
+            - norm (str): 归一化层类型 (batch、layer)
+            - dropedge (float): DropEdge 边丢弃概率 (0.0~0.2)
     """
 
     name: str = "gcn"

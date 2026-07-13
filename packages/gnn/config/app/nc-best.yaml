@@ -1,0 +1,59 @@
+# 节点分类 — 最佳实践配置
+#
+# 按文献基准推荐最佳模型：
+#   Cora:    GCN (~81%), GAT (~83%)
+#   CiteSeer: GCN (~71%), GAT (~72%)
+#   PubMed:  GAT (~79%), GCN (~79%)
+#
+# 使用方式：
+#   uv run gnn --config packages/gnn/config/app/nc-best.yaml                    # Cora + GCN
+#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --model gat        # 换 GAT
+#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --dataset pubmed   # PubMed
+#
+# 启用 DropEdge + LayerNorm 以增强抗过拟合：
+#   uv run gnn --config packages/gnn/config/app/nc-best.yaml --hidden-dim 64
+
+task: node_classification
+
+dataset:
+  name: cora
+  root: packages/gnn/data
+
+model:
+  name: gcn
+  params:
+    hidden_dim: 64
+    num_layers: 2
+    dropout: 0.5
+    norm: batch         # batch | layer —— 小图推荐 layer
+    dropedge: 0.0       # 0.0 ~ 0.2 —— 结构正则化，过拟合严重时设为 0.1
+
+optimizer:
+  name: adamw            # AdamW 解耦权重衰减，泛化更好
+  params:
+    lr: 0.01
+    weight_decay: 0.001  # 比 baseline 更强的 L2 正则化
+
+scheduler:
+  enabled: true
+  name: plateau
+  params:
+    factor: 0.5
+    patience: 20
+    min_lr: 1.0e-5
+
+train:
+  epochs: 300
+  early_stopping:
+    enabled: true
+    patience: 80         # 配合 plateau scheduler 需要较长 patience
+    monitor: val_acc
+
+runtime:
+  device: auto
+  compile: auto
+
+experiment:
+  name_prefix: nc_best
+  save_dir: packages/gnn/outputs
+  seeds: [42, 123, 456, 789, 1024]
