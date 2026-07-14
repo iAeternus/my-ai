@@ -49,21 +49,21 @@ class EarlyStopping:
             self._counter = 0
             self.improved = True
             return False
-        
+
         if self.mode == "max":
             improved = metric > self._best + self.min_delta
         else:
             improved = metric < self._best - self.min_delta
-        
+
         if improved:
             self._best = metric
             self._counter = 0
             self.improved = True
         else:
             self._counter += 1
-        
+
         return self._counter >= self.patience
-    
+
     @property
     def best(self) -> float | None:
         return self._best
