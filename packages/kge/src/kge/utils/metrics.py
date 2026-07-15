@@ -24,7 +24,23 @@ def ranks(
     Returns:
         (B,) LongTensor，每个样本中 true_tail 的排名 (1=最佳)
     """
-    ...
+    B, N = scores.shape
+
+    # filtered: 将已知真三元组（非当前 target）的得分设为 -inf
+    if filter_set is not None and heads is not None and relations is not None:
+        mask = torch.ones_like(scores, dtype=torch.bool)
+        for i in range(B):
+            h, r = heads[i].item(), relations[i].item()
+            for t in range(N):
+                if t != true_tails[i].item() and (h, r, t) in filter_set:
+                    mask[i, t] = False
+        scores = scores.masked_fill(~mask, float("-inf"))
+
+    # 排名：得分 >= true_tail 得分的实体数
+    true_scores = scores[torch.arange(B), true_tails].unsqueeze(1)  # (B, 1)
+    higher = (scores > true_scores).sum(dim=-1)  # (B,)
+    equal = (scores == true_scores).sum(dim=-1)  # handle ties
+    return higher + (equal + 1) // 2  # 1-indexed, ties get middle rank
 
 
 def mrr(ranks_tensor: Tensor) -> float:
@@ -33,7 +49,7 @@ def mrr(ranks_tensor: Tensor) -> float:
     Args:
         ranks_tensor: (B,) 排名张量 (1-indexed)
     """
-    ...
+    return (1.0 / ranks_tensor.float()).mean().item()
 
 
 def hits_at_k(ranks_tensor: Tensor, ks: list[int] = [1, 3, 10]) -> dict[int, float]:
@@ -43,9 +59,11 @@ def hits_at_k(ranks_tensor: Tensor, ks: list[int] = [1, 3, 10]) -> dict[int, flo
         ranks_tensor: (B,) 排名张量 (1-indexed)
         ks: K 值列表
     """
-    ...
+    total = ranks_tensor.numel()
+    return {k: (ranks_tensor <= k).sum().item() for k in ks}
 
 
 def accuracy(output: Tensor, target: Tensor) -> float:
     """多分类准确率"""
-    ...
+    pred = output.argmax(dim=-1)
+    return (pred == target).float().mean().item()
