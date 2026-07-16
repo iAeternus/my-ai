@@ -138,9 +138,19 @@ class BaseKGEEncoder(nn.Module, ABC):
         assert t_emb is not None
         return self.score(h_emb, r_emb, t_emb)
 
-    def regularize(self) -> Tensor:
-        """嵌入 L2 正则化 (实体嵌入)"""
-        return self.entity_embedding.weight.pow(2).sum() * 0.5
+    @staticmethod
+    def _embedding_regularize(*embeddings: Tensor, p: int = 2) -> Tensor:
+        """计算 sum(||x||_p^p)，返回标量 tensor"""
+        if not embeddings:
+            return torch.tensor(0.0)
+        reg = torch.tensor(0.0, device=embeddings[0].device)
+        for emb in embeddings:
+            reg = reg + emb.norm(p=p).pow(p)
+        return reg
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        """逐模型嵌入正则化，默认返回 0。子类覆写实现特定正则项"""
+        return torch.tensor(0.0, device=self.entity_embedding.weight.device)
 
 
 KGE_ENCODER_REGISTRY: dict[str, type[BaseKGEEncoder]] = {}
@@ -187,6 +197,12 @@ class TransEEncoder(BaseKGEEncoder):
         t_emb: Tensor,
     ) -> Tensor:
         return self.gamma - torch.norm(h_emb + r_emb - t_emb, p=self.p_norm, dim=-1)
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = self.relation_embedding(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, r, t, p=2)
 
 
 @register("trans-h")
@@ -257,6 +273,18 @@ class TransHEncoder(BaseKGEEncoder):
         t_proj = self._project(t_emb, w)
         return self.gamma - torch.norm(h_proj + r_vec - t_proj, p=self.p_norm, dim=-1)
 
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        r = cast(nn.Embedding, self.relation_embedding["r"])(relation)
+        w = F.normalize(cast(nn.Embedding, self.relation_embedding["w"])(relation), p=2, dim=-1)
+        h = self.entity_embedding(head)
+        t = self.entity_embedding(tail)
+        entity_reg = self._embedding_regularize(h, t, p=2) * 0.01
+        rel_reg = self._embedding_regularize(r, p=2) * 0.01
+        ortho_h = torch.sum(w * h, dim=-1).pow(2).mean()
+        ortho_t = torch.sum(w * t, dim=-1).pow(2).mean()
+        w_norm_reg = (torch.norm(w, p=2, dim=-1) - 1).pow(2).mean()
+        return entity_reg + rel_reg + (ortho_h + ortho_t) * 0.01 + w_norm_reg
+
 
 @register("trans-r")
 class TransREncoder(BaseKGEEncoder):
@@ -289,6 +317,17 @@ class TransREncoder(BaseKGEEncoder):
             }
         )
 
+    def reset_parameters(self) -> None:
+        bound = 6.0 / math.sqrt(self.embedding_dim)
+        nn.init.uniform_(self.entity_embedding.weight, -bound, bound)
+        nn.init.uniform_(cast(nn.Embedding, self.relation_embedding["r"]).weight, -bound, bound)
+        # M 初始化为恒等矩阵（展平），稳定早期训练
+        with torch.no_grad():
+            I_flat = torch.eye(self.relation_dim, self.embedding_dim).flatten()
+            cast(nn.Embedding, self.relation_embedding["M"]).weight.data.copy_(
+                I_flat.unsqueeze(0).repeat(self.num_relations, 1)
+            )
+
     def _get_relation_emb(self, r: Tensor) -> Tensor:
         return cast(nn.Embedding, self.relation_embedding["r"])(r)
 
@@ -307,15 +346,25 @@ class TransREncoder(BaseKGEEncoder):
         return self.gamma - torch.norm(h_proj + r_vec - t_proj, p=self.p_norm, dim=-1)
 
     def score(self, h_emb: Tensor, r_emb: Tensor, t_emb: Tensor) -> Tensor:
-        """朴素得分函数，不使用关系投影矩阵。
+        """朴素得分函数，不使用关系投影矩阵
 
         由于 score_all_tails 广播计算无法获取逐关系投影矩阵 M_r，
-        此处退化为简单范数 ‖h + r - t‖。正确实现见 forward()。
+        此处退化为简单范数 ‖h + r - t‖。正确实现见 forward()
 
         See Also:
-            forward(): 包含关系空间投影 h_proj = M_r(h), t_proj = M_r(t) 的正确 TransR 评分。
+            forward(): 包含关系空间投影 h_proj = M_r(h), t_proj = M_r(t) 的正确 TransR 评分
         """
         return self.gamma - torch.norm(h_emb + r_emb - t_emb, p=self.p_norm, dim=-1)
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = cast(nn.Embedding, self.relation_embedding["r"])(relation)
+        t = self.entity_embedding(tail)
+        M_weight = cast(nn.Embedding, self.relation_embedding["M"])(relation)
+        entity_reg = self._embedding_regularize(h, t, p=2) * 0.01
+        rel_reg = self._embedding_regularize(r, p=2) * 0.01
+        M_reg = self._embedding_regularize(M_weight, p=2)
+        return entity_reg + rel_reg + M_reg
 
 
 @register("dist-mult")
@@ -326,6 +375,12 @@ class DistMultEncoder(BaseKGEEncoder):
 
     def score(self, h_emb: Tensor, r_emb: Tensor, t_emb: Tensor) -> Tensor:
         return torch.sum(h_emb * r_emb * t_emb, dim=-1)
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = self.relation_embedding(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, r, t, p=3)
 
 
 @register("compl-ex")
@@ -356,6 +411,12 @@ class ComplExEncoder(BaseKGEEncoder):
             (h_re * r_re - h_im * r_im) * t_re + (h_re * r_im + h_im * r_re) * t_im,
             dim=-1,
         )
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = self.relation_embedding(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, r, t, p=3)
 
 
 @register("rotat-e")
@@ -413,6 +474,11 @@ class RotatEEncoder(BaseKGEEncoder):
             (h_rot_re - t_re) ** 2 + (h_rot_im - t_im) ** 2 + self.epsilon
         ).sum(dim=-1)
 
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, t, p=2)
+
 
 @register("pair-re")
 class PairREEncoder(BaseKGEEncoder):
@@ -458,15 +524,22 @@ class PairREEncoder(BaseKGEEncoder):
         return self.gamma - torch.norm(h_emb * rh - t_emb * rt, p=self.p_norm, dim=-1)
 
     def score(self, h_emb: Tensor, r_emb: Tensor, t_emb: Tensor) -> Tensor:
-        """朴素得分函数，不使用成对关系向量。
+        """朴素得分函数，不使用成对关系向量
 
         由于 score_all_tails 广播计算无法获取逐关系 rh/rt 向量，
-        此处退化为简单范数 ‖h - t‖。正确实现见 forward()。
+        此处退化为简单范数 ‖h - t‖。正确实现见 forward()
 
         See Also:
-            forward(): 包含 rh, rt 逐元素乘法的正确 PairRE 评分。
+            forward(): 包含 rh, rt 逐元素乘法的正确 PairRE 评分
         """
         return self.gamma - torch.norm(h_emb - t_emb, p=self.p_norm, dim=-1)
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        rh = cast(nn.Embedding, self.relation_embedding["rh"])(relation)
+        rt = cast(nn.Embedding, self.relation_embedding["rt"])(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, rh, rt, t, p=2)
 
 
 @register("conv-e")
@@ -566,6 +639,12 @@ class ConvEEncoder(BaseKGEEncoder):
         # 矩阵乘法：(B, d) @ (d, E) → (B, E)
         return x @ self.entity_embedding.weight.T
 
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = self.relation_embedding(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, r, t, p=2) * 0.01
+
 
 Quaternion: TypeAlias = tuple[Tensor, Tensor, Tensor, Tensor]
 
@@ -628,3 +707,9 @@ class QuatEEncoder(BaseKGEEncoder):
         )
 
         return (ha_rot * ta + hb_rot * tb + hc_rot * tc + hd_rot * td).sum(dim=-1)
+
+    def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
+        h = self.entity_embedding(head)
+        r = self.relation_embedding(relation)
+        t = self.entity_embedding(tail)
+        return self._embedding_regularize(h, r, t, p=2)

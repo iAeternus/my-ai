@@ -1,0 +1,39 @@
+# 三元组分类配置 — 冻结预训练 encoder，训练 TripleClassificationHead
+#
+# 用法:
+#   uv run kge --config config/triple_classification.yaml --encoder trans-e --dataset fb15k-237
+
+task: triple_classification
+
+dataset:
+  name: fb15k-237
+  root: packages/kge/data
+  batch_size: 512
+
+model:
+  encoder_name: trans-e
+  head_name: triple_classification
+  params:
+    embedding_dim: 100
+    hidden_dim: 256
+    hidden_dropout: 0.3
+
+optimizer:
+  name: adam
+  params:
+    lr: 0.001
+
+train:
+  epochs: 200
+  loss_type: cross_entropy
+  eval_interval: 10
+  early_stopping:
+    enabled: true
+    patience: 30
+    monitor: val_acc
+    min_delta: 0.0
+
+experiment:
+  name_prefix: kge_tc
+  save_dir: packages/kge/outputs
+  seeds: [42, 123, 456]

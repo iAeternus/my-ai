@@ -6,7 +6,7 @@ from torch import Tensor
 from kge.config.schema import Config, TaskType
 from kge.models.encoders import BaseKGEEncoder, KGE_ENCODER_REGISTRY
 from kge.models.heads import BaseHead, HEAD_REGISTRY
-from kge.utils.typing import get_param
+from kge.utils.typing import dict_get_or_default
 
 
 class KGEModel(nn.Module):
@@ -53,29 +53,29 @@ def build_model(cfg: Config, num_entities: int, num_relations: int) -> KGEModel:
     encoder_params: dict[str, Any] = {
         "num_entities": num_entities,
         "num_relations": num_relations,
-        "embedding_dim": get_param(p, "embedding_dim", 100),
+        "embedding_dim": dict_get_or_default(p, "embedding_dim", 100),
     }
 
     match encoder_name:
         case "trans-e" | "trans-h":
-            encoder_params["gamma"] = get_param(p, "gamma", 12.0)
-            encoder_params["p_norm"] = get_param(p, "p_norm", 1)
+            encoder_params["gamma"] = dict_get_or_default(p, "gamma", 12.0)
+            encoder_params["p_norm"] = dict_get_or_default(p, "p_norm", 1)
         case "trans-r":
-            encoder_params["gamma"] = get_param(p, "gamma", 12.0)
-            encoder_params["p_norm"] = get_param(p, "p_norm", 1)
-            encoder_params["relation_dim"] = get_param(p, "relation_dim", 100)
+            encoder_params["gamma"] = dict_get_or_default(p, "gamma", 12.0)
+            encoder_params["p_norm"] = dict_get_or_default(p, "p_norm", 1)
+            encoder_params["relation_dim"] = dict_get_or_default(p, "relation_dim", 100)
         case "rotat-e":
-            encoder_params["gamma"] = get_param(p, "gamma", 12.0)
-            encoder_params["epsilon"] = get_param(p, "epsilon", 2.0)
+            encoder_params["gamma"] = dict_get_or_default(p, "gamma", 12.0)
+            encoder_params["epsilon"] = dict_get_or_default(p, "epsilon", 2.0)
         case "pair-re":
-            encoder_params["gamma"] = get_param(p, "gamma", 12.0)
-            encoder_params["p_norm"] = get_param(p, "p_norm", 1)
+            encoder_params["gamma"] = dict_get_or_default(p, "gamma", 12.0)
+            encoder_params["p_norm"] = dict_get_or_default(p, "p_norm", 1)
         case "conv-e":
-            encoder_params["conv_out_channels"] = get_param(p, "conv_out_channels", 32)
-            encoder_params["kernel_size"] = get_param(p, "kernel_size", 3)
-            encoder_params["input_dropout"] = get_param(p, "input_dropout", 0.2)
-            encoder_params["feature_dropout"] = get_param(p, "feature_dropout", 0.2)
-            encoder_params["hidden_dropout"] = get_param(p, "hidden_dropout", 0.3)
+            encoder_params["conv_out_channels"] = dict_get_or_default(p, "conv_out_channels", 32)
+            encoder_params["kernel_size"] = dict_get_or_default(p, "kernel_size", 3)
+            encoder_params["input_dropout"] = dict_get_or_default(p, "input_dropout", 0.2)
+            encoder_params["feature_dropout"] = dict_get_or_default(p, "feature_dropout", 0.2)
+            encoder_params["hidden_dropout"] = dict_get_or_default(p, "hidden_dropout", 0.3)
         case _:
             pass  # 无需额外参数（dist-mult, compl-ex, quat-e）
 
@@ -96,12 +96,12 @@ def build_model(cfg: Config, num_entities: int, num_relations: int) -> KGEModel:
         case "relation_prediction":
             head_params["embedding_dim"] = encoder.embedding_dim
             head_params["num_relations"] = num_relations
-            head_params["hidden_dim"] = get_param(p, "hidden_dim", 256)
-            head_params["dropout"] = get_param(p, "hidden_dropout", 0.3)
+            head_params["hidden_dim"] = dict_get_or_default(p, "hidden_dim", 256)
+            head_params["dropout"] = dict_get_or_default(p, "hidden_dropout", 0.3)
         case "triple_classification":
             head_params["embedding_dim"] = encoder.embedding_dim
-            head_params["hidden_dim"] = get_param(p, "hidden_dim", 256)
-            head_params["dropout"] = get_param(p, "hidden_dropout", 0.3)
+            head_params["hidden_dim"] = dict_get_or_default(p, "hidden_dim", 256)
+            head_params["dropout"] = dict_get_or_default(p, "hidden_dropout", 0.3)
         case _:
             pass
 

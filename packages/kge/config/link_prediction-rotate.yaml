@@ -1,0 +1,40 @@
+# 链接预测 RotatE best-practice 配置
+#
+# 用法:
+#   uv run kge --config config/link_prediction-rotate.yaml
+
+task: link_prediction
+
+dataset:
+  name: fb15k-237
+  root: packages/kge/data
+  batch_size: 1024
+  num_negative_samples: 256
+
+model:
+  encoder_name: rotat-e
+  head_name: link_prediction
+  params:
+    embedding_dim: 500
+
+optimizer:
+  name: adam
+  params:
+    lr: 0.0001
+
+train:
+  epochs: 500
+  loss_type: margin_ranking
+  margin: 12.0
+  adversarial_temperature: 0.5
+  eval_interval: 10
+  early_stopping:
+    enabled: true
+    patience: 50
+    monitor: val_mrr
+    min_delta: 0.0
+
+experiment:
+  name_prefix: kge_rotate
+  save_dir: packages/kge/outputs
+  seeds: [42, 123, 456, 789, 1024]

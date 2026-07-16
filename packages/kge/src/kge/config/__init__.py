@@ -10,7 +10,7 @@ from kge.config.schema import (
     RuntimeConfig,
     ExperimentConfig,
 )
-from kge.config.loader import from_yaml, from_dict, from_cli, model_defaults
+from kge.config.loader import from_yaml, from_dict, from_cli
 from kge.config.parser import create_parser, parse_args
 
 __all__ = [
@@ -27,7 +27,6 @@ __all__ = [
     "from_yaml",
     "from_dict",
     "from_cli",
-    "model_defaults",
     "create_parser",
     "parse_args",
 ]

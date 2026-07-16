@@ -60,7 +60,7 @@ def hits_at_k(ranks_tensor: Tensor, ks: list[int] = [1, 3, 10]) -> dict[int, flo
         ks: K 值列表
     """
     total = ranks_tensor.numel()
-    return {k: (ranks_tensor <= k).sum().item() for k in ks}
+    return {k: (ranks_tensor <= k).sum().item() / total for k in ks}
 
 
 def accuracy(output: Tensor, target: Tensor) -> float:

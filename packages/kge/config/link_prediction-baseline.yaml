@@ -1,0 +1,43 @@
+# 链接预测 baseline 配置
+#
+# 模型专属参数（gamma、p_norm、epsilon 等）由 builder.py 自动提供默认值，无需在 YAML 中声明
+# 如需覆盖，可通过 CLI 传入：--gamma 12.0 --p-norm 1
+#
+# 用法:
+#   uv run kge --config config/link_prediction-baseline.yaml --encoder trans-e --dataset fb15k-237
+#   uv run kge --config config/link_prediction-baseline.yaml --encoder rotate --dataset wn18rr
+
+task: link_prediction
+
+dataset:
+  name: fb15k-237
+  root: packages/kge/data
+  batch_size: 1024
+  num_negative_samples: 128
+
+model:
+  encoder_name: trans-e
+  head_name: link_prediction
+  params:
+    embedding_dim: 100
+
+optimizer:
+  name: adam
+  params:
+    lr: 0.001
+
+train:
+  epochs: 500
+  loss_type: margin_ranking
+  margin: 1.0
+  eval_interval: 10
+  early_stopping:
+    enabled: true
+    patience: 50
+    monitor: val_mrr
+    min_delta: 0.0
+
+experiment:
+  name_prefix: kge
+  save_dir: packages/kge/outputs
+  seeds: [42, 123, 456]
