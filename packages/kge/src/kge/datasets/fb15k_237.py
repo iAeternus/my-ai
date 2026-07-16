@@ -5,6 +5,7 @@ import urllib.request
 import torch
 from torch import Tensor
 
+from kge.utils.paths import DATA_DIR
 from kge.datasets.base import BaseKGDataset
 from kge.datasets.registry import KGDatasetRegistry
 
@@ -19,7 +20,7 @@ class FB15k237Dataset(BaseKGDataset):
 
     name = "fb15k-237"
 
-    def __init__(self, root: str = "packages/kge/data") -> None:
+    def __init__(self, root: str = str(DATA_DIR)) -> None:
         super().__init__(root)
         self._num_entities = 0
         self._num_relations = 0

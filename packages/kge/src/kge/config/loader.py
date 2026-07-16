@@ -2,6 +2,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
+from kge.utils.paths import DATA_DIR, OUTPUT_DIR, PROJECT_ROOT, resolve_path
 from kge.config.schema import (
     Config,
     DatasetConfig,
@@ -44,7 +45,7 @@ def from_dict(data: dict[str, Any]) -> Config:
         task=TaskType(task_raw),
         dataset=DatasetConfig(
             name=ds.get("name", "fb15k-237"),
-            root=ds.get("root", "packages/kge/data"),
+            root=str(resolve_path(ds.get("root", str(DATA_DIR)))),
             batch_size=ds.get("batch_size", 1024),
             num_negative_samples=ds.get("num_negative_samples", 128),
             num_workers=ds.get("num_workers", 0),
@@ -82,7 +83,7 @@ def from_dict(data: dict[str, Any]) -> Config:
         ),
         experiment=ExperimentConfig(
             name_prefix=e.get("name_prefix", "kge"),
-            save_dir=e.get("save_dir", "packages/kge/outputs"),
+            save_dir=str(resolve_path(e.get("save_dir", str(OUTPUT_DIR)))),
             seeds=e.get("seeds", [42]),
         ),
     )
@@ -100,8 +101,10 @@ def from_cli(
     config = Config()
     if yaml_path:
         path = Path(yaml_path)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
         if path.exists():
-            config = from_yaml(yaml_path)
+            config = from_yaml(path)
 
     if cli_overrides:
         raw = asdict(config)

@@ -1,6 +1,7 @@
 import importlib
 import pkgutil
 
+from kge.utils.paths import DATA_DIR
 from kge.datasets.base import BaseKGDataset
 from kge.datasets.registry import KGDatasetRegistry
 from kge.datasets.data_module import KGDataModule, KGBatch
@@ -18,7 +19,7 @@ for _module_info in pkgutil.iter_modules(__path__):
     importlib.import_module(f"kge.datasets.{_module_info.name}")
 
 
-def load_dataset(name: str, root: str = "packages/kge/data") -> BaseKGDataset:
+def load_dataset(name: str, root: str = str(DATA_DIR)) -> BaseKGDataset:
     dataset_cls = KGDatasetRegistry.get(name)
     return dataset_cls(root=root)
 

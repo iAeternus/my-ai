@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from kge.utils.paths import DATA_DIR, OUTPUT_DIR
+
 
 class TaskType(str, Enum):
     LINK_PREDICTION = "link_prediction"
@@ -30,7 +32,7 @@ class DatasetConfig:
     """
 
     name: str = "fb15k-237"
-    root: str = "packages/kge/data"
+    root: str = str(DATA_DIR)
     batch_size: int = 1024
     num_negative_samples: int = 128
     num_workers: int = 0
@@ -111,7 +113,7 @@ class ExperimentConfig:
     """实验配置"""
 
     name_prefix: str = "kge"
-    save_dir: str = "packages/kge/outputs"
+    save_dir: str = str(OUTPUT_DIR)
     seeds: list[int] = field(default_factory=lambda: [42])
 
 
