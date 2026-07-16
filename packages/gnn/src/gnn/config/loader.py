@@ -79,7 +79,7 @@ def apply_cli_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> No
 
     仅覆盖非 None 的项
     """
-    
+
     # 将 CLI 参数名映射为嵌套字典路径（逐层 key 列表）
     _OVERRIDE_MAP: dict[str, list[str]] = {
         "task": ["task"],

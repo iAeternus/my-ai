@@ -1,4 +1,5 @@
 """KGE 损失函数 — 纯函数，无状态"""
+
 from __future__ import annotations
 import torch
 import torch.nn.functional as F
@@ -62,8 +63,12 @@ def bce_loss(
     pos_labels = torch.ones_like(pos_scores) * (1.0 - label_smoothing)
     neg_labels = torch.zeros_like(neg_scores) + label_smoothing / K
 
-    pos_loss = F.binary_cross_entropy_with_logits(pos_scores, pos_labels, reduction="sum")
-    neg_loss = F.binary_cross_entropy_with_logits(neg_scores, neg_labels, reduction="sum")
+    pos_loss = F.binary_cross_entropy_with_logits(
+        pos_scores, pos_labels, reduction="sum"
+    )
+    neg_loss = F.binary_cross_entropy_with_logits(
+        neg_scores, neg_labels, reduction="sum"
+    )
 
     return (pos_loss + neg_loss) / (B * (1 + K))
 

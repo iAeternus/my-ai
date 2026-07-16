@@ -1,4 +1,3 @@
-"""TripleClassificationTrainer — 三元组分类训练器"""
 from __future__ import annotations
 import logging
 
@@ -42,15 +41,19 @@ class TripleClassificationTrainer(BaseTrainer):
         B = h.size(0)
 
         # 每正例采样 1 个负例
-        neg_h, neg_r, neg_t = self.neg_sampler.sample(h, r, t, num_neg=1, device=self.device)
+        neg_h, neg_r, neg_t = self.neg_sampler.sample(
+            h, r, t, num_neg=1, device=self.device
+        )
 
         pos_logits = self.model(h, r, t)  # (B, 2)
         neg_logits = self.model(neg_h, neg_r, neg_t)  # (B, 2)
         logits = torch.cat([pos_logits, neg_logits], dim=0)  # (2B, 2)
-        labels = torch.cat([
-            torch.ones(B, dtype=torch.long, device=self.device),
-            torch.zeros(B, dtype=torch.long, device=self.device),
-        ])
+        labels = torch.cat(
+            [
+                torch.ones(B, dtype=torch.long, device=self.device),
+                torch.zeros(B, dtype=torch.long, device=self.device),
+            ]
+        )
 
         loss = F.cross_entropy(logits, labels)
         acc = (logits.argmax(dim=-1) == labels).float().mean().item()
@@ -72,15 +75,19 @@ class TripleClassificationTrainer(BaseTrainer):
         B = len(triples)
         h, r, t = triples[:, 0], triples[:, 1], triples[:, 2]
 
-        neg_h, neg_r, neg_t = self.neg_sampler.sample(h, r, t, num_neg=1, device=self.device)
+        neg_h, neg_r, neg_t = self.neg_sampler.sample(
+            h, r, t, num_neg=1, device=self.device
+        )
 
         pos_logits = self.model(h, r, t)
         neg_logits = self.model(neg_h, neg_r, neg_t)
         logits = torch.cat([pos_logits, neg_logits], dim=0)
-        labels = torch.cat([
-            torch.ones(B, dtype=torch.long, device=self.device),
-            torch.zeros(B, dtype=torch.long, device=self.device),
-        ])
+        labels = torch.cat(
+            [
+                torch.ones(B, dtype=torch.long, device=self.device),
+                torch.zeros(B, dtype=torch.long, device=self.device),
+            ]
+        )
 
         loss = F.cross_entropy(logits, labels).item()
         acc = accuracy(logits, labels)

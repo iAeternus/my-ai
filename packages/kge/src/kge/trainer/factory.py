@@ -1,4 +1,3 @@
-"""create_trainer — 按 TaskType 分发"""
 from __future__ import annotations
 
 import torch

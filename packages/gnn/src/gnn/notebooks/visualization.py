@@ -19,19 +19,26 @@ from torch_geometric.data import Data
 
 # ── CJK 字体 ────────────────────────────────────────────────────
 _CJK_FONT_CANDIDATES = [
-    "Microsoft YaHei", "SimHei", "WenQuanYi Micro Hei",
-    "Noto Sans CJK SC", "Source Han Sans SC", "AR PL UMing CN",
+    "Microsoft YaHei",
+    "SimHei",
+    "WenQuanYi Micro Hei",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "AR PL UMing CN",
 ]
 
 
 def _configure_cjk() -> None:
     from matplotlib.font_manager import FontProperties, fontManager
+
     for name in _CJK_FONT_CANDIDATES:
         try:
             font = FontProperties(family=name)
             path = fontManager.findfont(font, fallback_to_default=False)
             if path:
-                matplotlib.rcParams["font.sans-serif"] = [name] + matplotlib.rcParams["font.sans-serif"]
+                matplotlib.rcParams["font.sans-serif"] = [name] + matplotlib.rcParams[
+                    "font.sans-serif"
+                ]
                 matplotlib.rcParams["axes.unicode_minus"] = False
                 return
         except Exception:
@@ -43,6 +50,7 @@ _configure_cjk()
 # ══════════════════════════════════════════════════════════════════
 # 通用
 # ══════════════════════════════════════════════════════════════════
+
 
 def plot_training_curves(
     history: dict[str, list[float]],
@@ -71,8 +79,13 @@ def plot_training_curves(
         ax1.plot(epochs, history["val_loss"], label="Val Loss", linewidth=1.2)
         # 标注 best val_loss
         best_idx = int(np.argmin(history["val_loss"]))
-        ax1.axvline(x=best_idx + 1, color="gray", linestyle="--", alpha=0.5,
-                    label=f"Best (epoch {best_idx + 1})")
+        ax1.axvline(
+            x=best_idx + 1,
+            color="gray",
+            linestyle="--",
+            alpha=0.5,
+            label=f"Best (epoch {best_idx + 1})",
+        )
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     ax1.legend(fontsize=8)
@@ -89,17 +102,27 @@ def plot_training_curves(
         best_idx = int(np.argmax(history[val_key]))
         best_val = history[val_key][best_idx]
         ax2.axvline(x=best_idx + 1, color="gray", linestyle="--", alpha=0.5)
-        ax2.annotate(f"{best_val:.4f}", xy=(best_idx + 1, best_val),
-                     xytext=(5, 5), textcoords="offset points", fontsize=8,
-                     color="gray")
+        ax2.annotate(
+            f"{best_val:.4f}",
+            xy=(best_idx + 1, best_val),
+            xytext=(5, 5),
+            textcoords="offset points",
+            fontsize=8,
+            color="gray",
+        )
         # Train-Val gap 阴影
         if train_key in history:
             train_vals = np.array(history[train_key])
             val_vals = np.array(history[val_key])
             min_len = min(len(train_vals), len(val_vals))
-            ax2.fill_between(epochs[:min_len], train_vals[:min_len],
-                             val_vals[:min_len], alpha=0.08, color="red",
-                             label="Train-Val Gap")
+            ax2.fill_between(
+                epochs[:min_len],
+                train_vals[:min_len],
+                val_vals[:min_len],
+                alpha=0.08,
+                color="red",
+                label="Train-Val Gap",
+            )
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel(metric_label)
     ax2.legend(fontsize=8)
@@ -113,6 +136,7 @@ def plot_training_curves(
 # ══════════════════════════════════════════════════════════════════
 # 节点分类
 # ══════════════════════════════════════════════════════════════════
+
 
 def plot_class_distribution(data: Data) -> Figure:
     """类别分布柱状图（含 train/val/test 拆分）"""
@@ -131,8 +155,14 @@ def plot_class_distribution(data: Data) -> Figure:
     ]:
         mask = mask_tensor.cpu().numpy().ravel()
         mask_counts = [int(np.sum((y == c) & mask)) for c in classes]
-        ax.bar(x + width * ["Train", "Val", "Test"].index(label),
-               mask_counts, width, label=label, color=color, alpha=0.85)
+        ax.bar(
+            x + width * ["Train", "Val", "Test"].index(label),
+            mask_counts,
+            width,
+            label=label,
+            color=color,
+            alpha=0.85,
+        )
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([f"Class {c}" for c in classes])
@@ -160,6 +190,7 @@ def plot_confusion_matrix(
         normalize: True = 行归一化（召回率），False = 绝对计数
     """
     from sklearn.metrics import confusion_matrix as sklearn_cm
+
     cm = sklearn_cm(y_true, y_pred)
     n = cm.shape[0]
 
@@ -184,7 +215,11 @@ def plot_confusion_matrix(
     for i in range(n):
         for j in range(n):
             text = f"{cm_display[i, j]:{fmt}}" if normalize else f"{cm[i, j]}"
-            color = "white" if cm_display[i, j] > (0.7 if normalize else cm.max() * 0.6) else "black"
+            color = (
+                "white"
+                if cm_display[i, j] > (0.7 if normalize else cm.max() * 0.6)
+                else "black"
+            )
             ax.text(j, i, text, ha="center", va="center", fontsize=8, color=color)
 
     ax.set_xticks(range(n))
@@ -235,7 +270,9 @@ def plot_tsne_embeddings(
     any_mask = any(m is not None for m in (train_mask, val_mask, test_mask))
     markers = {"train": "o", "val": "s", "test": "^"}
     masks: dict[str, NDArray[np.bool_] | None] = {
-        "train": train_mask, "val": val_mask, "test": test_mask,
+        "train": train_mask,
+        "val": val_mask,
+        "test": test_mask,
     }
 
     for label_idx in unique_labels:
@@ -247,20 +284,29 @@ def plot_tsne_embeddings(
                 if not subset.any():
                     continue
                 ax.scatter(
-                    reduced[subset, 0], reduced[subset, 1],
+                    reduced[subset, 0],
+                    reduced[subset, 1],
                     c=[cmap(label_idx / max(1, len(unique_labels) - 1))],
-                    marker=markers[split_name], s=12, alpha=0.6,
+                    marker=markers[split_name],
+                    s=12,
+                    alpha=0.6,
                     edgecolors="none",
-                    label=f"Class {label_idx} ({split_name})" if split_name == "train" else "",
+                    label=f"Class {label_idx} ({split_name})"
+                    if split_name == "train"
+                    else "",
                 )
         else:
             subset = labels == label_idx
             if not subset.any():
                 continue
             ax.scatter(
-                reduced[subset, 0], reduced[subset, 1],
+                reduced[subset, 0],
+                reduced[subset, 1],
                 c=[cmap(label_idx / max(1, len(unique_labels) - 1))],
-                marker="o", s=10, alpha=0.5, edgecolors="none",
+                marker="o",
+                s=10,
+                alpha=0.5,
+                edgecolors="none",
             )
 
     if any_mask:
@@ -270,11 +316,17 @@ def plot_tsne_embeddings(
         for h, l in zip(handles, lbls):
             base = l.rsplit(" (", 1)[0]
             by_label.setdefault(base, h)
-        ax.legend(by_label.values(), by_label.keys(), fontsize=7, markerscale=1.5,
-                  loc="upper right")
+        ax.legend(
+            by_label.values(),
+            by_label.keys(),
+            fontsize=7,
+            markerscale=1.5,
+            loc="upper right",
+        )
 
         # 自定义 marker 图例
         from matplotlib.lines import Line2D
+
         marker_legend = [
             Line2D([0], [0], marker="o", color="gray", linestyle="none", label="Train"),
             Line2D([0], [0], marker="s", color="gray", linestyle="none", label="Val"),
@@ -283,8 +335,10 @@ def plot_tsne_embeddings(
         ax.legend(handles=marker_legend, fontsize=7, loc="lower right")
     else:
         # 无 mask 时显示 colorbar 表示连续值（度数场景）
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(
-            vmin=unique_labels.min(), vmax=unique_labels.max()))
+        sm = plt.cm.ScalarMappable(
+            cmap=cmap,
+            norm=plt.Normalize(vmin=unique_labels.min(), vmax=unique_labels.max()),
+        )
         cbar = fig.colorbar(sm, ax=ax, shrink=0.8)
         cbar.set_label("度数", fontsize=8)
 
@@ -299,6 +353,7 @@ def plot_tsne_embeddings(
 # ══════════════════════════════════════════════════════════════════
 # 链接预测
 # ══════════════════════════════════════════════════════════════════
+
 
 def plot_edge_split_summary(
     train_data: Data,
@@ -326,8 +381,12 @@ def plot_edge_split_summary(
 
     x = np.arange(len(splits))
     w = 0.35
-    axes[0].bar(x - w / 2, pos_counts, w, label="正样本 (有边)", color="#2ecc71", alpha=0.85)
-    axes[0].bar(x + w / 2, neg_counts, w, label="负样本 (无边)", color="#e74c3c", alpha=0.85)
+    axes[0].bar(
+        x - w / 2, pos_counts, w, label="正样本 (有边)", color="#2ecc71", alpha=0.85
+    )
+    axes[0].bar(
+        x + w / 2, neg_counts, w, label="负样本 (无边)", color="#e74c3c", alpha=0.85
+    )
     axes[0].set_xticks(x)
     axes[0].set_xticklabels(splits)
     axes[0].set_ylabel("边对数量")
@@ -362,7 +421,12 @@ def plot_roc_pr_curves(
         y_true: 真实标签
         y_score: 预测分数（未经过 sigmoid）
     """
-    from sklearn.metrics import RocCurveDisplay, PrecisionRecallDisplay, roc_auc_score, average_precision_score
+    from sklearn.metrics import (
+        RocCurveDisplay,
+        PrecisionRecallDisplay,
+        roc_auc_score,
+        average_precision_score,
+    )
 
     y_true_b = y_true.astype(int)
     y_prob = 1 / (1 + np.exp(-y_score))  # sigmoid
@@ -371,7 +435,9 @@ def plot_roc_pr_curves(
 
     # ROC
     auc = roc_auc_score(y_true_b, y_prob)
-    RocCurveDisplay.from_predictions(y_true_b, y_prob, ax=ax1, name=f"GNN (AUC={auc:.4f})")
+    RocCurveDisplay.from_predictions(
+        y_true_b, y_prob, ax=ax1, name=f"GNN (AUC={auc:.4f})"
+    )
     ax1.plot([0, 1], [0, 1], "k--", alpha=0.3, label="Random")
     ax1.set_title("ROC 曲线")
     ax1.legend(fontsize=8)
@@ -379,10 +445,17 @@ def plot_roc_pr_curves(
 
     # PR
     ap = average_precision_score(y_true_b, y_prob)
-    PrecisionRecallDisplay.from_predictions(y_true_b, y_prob, ax=ax2, name=f"GNN (AP={ap:.4f})")
+    PrecisionRecallDisplay.from_predictions(
+        y_true_b, y_prob, ax=ax2, name=f"GNN (AP={ap:.4f})"
+    )
     baseline = y_true_b.mean()
-    ax2.axhline(y=baseline, color="gray", linestyle="--", alpha=0.5,
-                label=f"Baseline ({baseline:.3f})")
+    ax2.axhline(
+        y=baseline,
+        color="gray",
+        linestyle="--",
+        alpha=0.5,
+        label=f"Baseline ({baseline:.3f})",
+    )
     ax2.set_title("Precision-Recall 曲线")
     ax2.legend(fontsize=8)
     ax2.grid(True, alpha=0.2)
@@ -408,10 +481,22 @@ def plot_prediction_histogram(
     y_prob = 1 / (1 + np.exp(-y_score))
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.hist(y_prob[y_true_b == 1], bins=bins, alpha=0.6, color="#2ecc71",
-            label=f"正样本 (n={int(y_true_b.sum())})", density=True)
-    ax.hist(y_prob[y_true_b == 0], bins=bins, alpha=0.6, color="#e74c3c",
-            label=f"负样本 (n={int((1 - y_true_b).sum())})", density=True)
+    ax.hist(
+        y_prob[y_true_b == 1],
+        bins=bins,
+        alpha=0.6,
+        color="#2ecc71",
+        label=f"正样本 (n={int(y_true_b.sum())})",
+        density=True,
+    )
+    ax.hist(
+        y_prob[y_true_b == 0],
+        bins=bins,
+        alpha=0.6,
+        color="#e74c3c",
+        label=f"负样本 (n={int((1 - y_true_b).sum())})",
+        density=True,
+    )
     ax.axvline(x=0.5, color="gray", linestyle="--", alpha=0.5, label="阈值 0.5")
     ax.set_xlabel("预测概率")
     ax.set_ylabel("密度")
@@ -440,15 +525,17 @@ def plot_top_predictions_table(
     # 筛选预测为正但实际为负的（高分误判）+ 最高分的正样本
     mistakes = np.argsort(-y_prob)
     rows = []
-    for idx in mistakes[:top_k * 2]:
+    for idx in mistakes[: top_k * 2]:
         if len(rows) >= top_k:
             break
         src, dst = edge_index[0, idx], edge_index[1, idx]
-        rows.append([
-            f"#{src} ↔ #{dst}",
-            f"{y_prob[idx]:.4f}",
-            "✓" if edge_label[idx] == 1 else "✗",
-        ])
+        rows.append(
+            [
+                f"#{src} ↔ #{dst}",
+                f"{y_prob[idx]:.4f}",
+                "✓" if edge_label[idx] == 1 else "✗",
+            ]
+        )
 
     fig, ax = plt.subplots(figsize=(8, 0.4 * len(rows) + 1.2))
     ax.axis("off")

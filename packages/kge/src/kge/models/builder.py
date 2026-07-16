@@ -71,11 +71,19 @@ def build_model(cfg: Config, num_entities: int, num_relations: int) -> KGEModel:
             encoder_params["gamma"] = dict_get_or_default(p, "gamma", 12.0)
             encoder_params["p_norm"] = dict_get_or_default(p, "p_norm", 1)
         case "conv-e":
-            encoder_params["conv_out_channels"] = dict_get_or_default(p, "conv_out_channels", 32)
+            encoder_params["conv_out_channels"] = dict_get_or_default(
+                p, "conv_out_channels", 32
+            )
             encoder_params["kernel_size"] = dict_get_or_default(p, "kernel_size", 3)
-            encoder_params["input_dropout"] = dict_get_or_default(p, "input_dropout", 0.2)
-            encoder_params["feature_dropout"] = dict_get_or_default(p, "feature_dropout", 0.2)
-            encoder_params["hidden_dropout"] = dict_get_or_default(p, "hidden_dropout", 0.3)
+            encoder_params["input_dropout"] = dict_get_or_default(
+                p, "input_dropout", 0.2
+            )
+            encoder_params["feature_dropout"] = dict_get_or_default(
+                p, "feature_dropout", 0.2
+            )
+            encoder_params["hidden_dropout"] = dict_get_or_default(
+                p, "hidden_dropout", 0.3
+            )
         case _:
             pass  # 无需额外参数（dist-mult, compl-ex, quat-e）
 

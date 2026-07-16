@@ -275,7 +275,9 @@ class TransHEncoder(BaseKGEEncoder):
 
     def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
         r = cast(nn.Embedding, self.relation_embedding["r"])(relation)
-        w = F.normalize(cast(nn.Embedding, self.relation_embedding["w"])(relation), p=2, dim=-1)
+        w = F.normalize(
+            cast(nn.Embedding, self.relation_embedding["w"])(relation), p=2, dim=-1
+        )
         h = self.entity_embedding(head)
         t = self.entity_embedding(tail)
         entity_reg = self._embedding_regularize(h, t, p=2) * 0.01
@@ -320,7 +322,9 @@ class TransREncoder(BaseKGEEncoder):
     def reset_parameters(self) -> None:
         bound = 6.0 / math.sqrt(self.embedding_dim)
         nn.init.uniform_(self.entity_embedding.weight, -bound, bound)
-        nn.init.uniform_(cast(nn.Embedding, self.relation_embedding["r"]).weight, -bound, bound)
+        nn.init.uniform_(
+            cast(nn.Embedding, self.relation_embedding["r"]).weight, -bound, bound
+        )
         # M 初始化为恒等矩阵（展平），稳定早期训练
         with torch.no_grad():
             I_flat = torch.eye(self.relation_dim, self.embedding_dim).flatten()

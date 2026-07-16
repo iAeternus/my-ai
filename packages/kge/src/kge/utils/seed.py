@@ -1,4 +1,5 @@
 """可复现性工具"""
+
 from __future__ import annotations
 import random
 import numpy as np

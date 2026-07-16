@@ -1,4 +1,3 @@
-"""LinkPredictionTrainer — 链接预测训练器"""
 from __future__ import annotations
 import logging
 
@@ -46,31 +45,41 @@ class LinkPredictionTrainer(BaseTrainer):
             if loss_type == LossType.MARGIN_RANKING:
                 if self.cfg.train.adversarial_temperature > 0:
                     loss = adversarial_margin_loss(
-                        pos_scores, neg_scores,
+                        pos_scores,
+                        neg_scores,
                         margin=self.cfg.train.margin,
                         temperature=self.cfg.train.adversarial_temperature,
                     )
                 else:
                     loss = margin_ranking_loss(
-                        pos_scores, neg_scores, margin=self.cfg.train.margin,
+                        pos_scores,
+                        neg_scores,
+                        margin=self.cfg.train.margin,
                     )
             else:
                 loss = bce_loss(
-                    pos_scores, neg_scores,
+                    pos_scores,
+                    neg_scores,
                     label_smoothing=self.cfg.train.label_smoothing,
                 )
 
         elif loss_type == LossType.CROSS_ENTROPY:
             scores = self.model.encoder.score_all_tails(h, r)  # (B, num_entities)
             loss = cross_entropy_1n(
-                scores, t, label_smoothing=self.cfg.train.label_smoothing,
+                scores,
+                t,
+                label_smoothing=self.cfg.train.label_smoothing,
             )
         else:
             raise ValueError(f"不支持的损失类型: {loss_type}")
 
         # 正则化
         if self.cfg.train.regularization_weight > 0:
-            loss = loss + self.cfg.train.regularization_weight * self.model.encoder.regularize(h, r, t)
+            loss = (
+                loss
+                + self.cfg.train.regularization_weight
+                * self.model.encoder.regularize(h, r, t)
+            )
 
         self.optimizer.zero_grad()
         loss.backward()

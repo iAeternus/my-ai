@@ -13,7 +13,7 @@ PLANETOID_DATASETS = {
 def load_planetoid(name: str, root: str = "data") -> Data:
     if name not in PLANETOID_DATASETS:
         raise ValueError(
-            f"Unsupported dataset: {name}. " f"Available: {list(PLANETOID_DATASETS)}"
+            f"Unsupported dataset: {name}. Available: {list(PLANETOID_DATASETS)}"
         )
 
     dataset = Planetoid(root=root, name=PLANETOID_DATASETS[name])

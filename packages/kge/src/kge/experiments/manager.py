@@ -1,4 +1,5 @@
 """ExperimentManager — 实验目录、产物和绘图管理器"""
+
 from __future__ import annotations
 import json
 import statistics
@@ -221,23 +222,34 @@ class ExperimentManager:
 
         # Loss
         _draw_line_plot(
-            history, epochs, plots_dir / "loss.png",
-            train_key="loss", val_key="val_loss", ylabel="Loss",
+            history,
+            epochs,
+            plots_dir / "loss.png",
+            train_key="loss",
+            val_key="val_loss",
+            ylabel="Loss",
         )
 
         # MRR
         mrr_keys = [k for k in history if "mrr" in k.lower()]
         if mrr_keys:
             _draw_multi_line_plot(
-                history, epochs, plots_dir / "mrr.png", keys=mrr_keys, ylabel="MRR",
+                history,
+                epochs,
+                plots_dir / "mrr.png",
+                keys=mrr_keys,
+                ylabel="MRR",
             )
 
         # Hits@K
         hits_keys = [k for k in history if "hits" in k.lower()]
         if hits_keys:
             _draw_multi_line_plot(
-                history, epochs, plots_dir / "hits_at_k.png",
-                keys=hits_keys, ylabel="Hits@K",
+                history,
+                epochs,
+                plots_dir / "hits_at_k.png",
+                keys=hits_keys,
+                ylabel="Hits@K",
             )
 
 
@@ -294,8 +306,11 @@ def _draw_multi_line_plot(
             n_vals = len(vals)
             if n_vals > 0:
                 plt.plot(
-                    epochs[:n_vals] if len(epochs) >= n_vals else list(range(1, n_vals + 1)),
-                    vals, label=key,
+                    epochs[:n_vals]
+                    if len(epochs) >= n_vals
+                    else list(range(1, n_vals + 1)),
+                    vals,
+                    label=key,
                 )
                 has_data = True
 

@@ -83,9 +83,9 @@ class NegativeSampler(ABC):
         Returns:
             (neg_h, neg_t): 碰撞重采样后的负样本
         """
-        assert (
-            neg_h.device == device and neg_t.device == device
-        ), f"Device mismatch: neg_h={neg_h.device}, neg_t={neg_t.device}, expected={device}"
+        assert neg_h.device == device and neg_t.device == device, (
+            f"Device mismatch: neg_h={neg_h.device}, neg_t={neg_t.device}, expected={device}"
+        )
         assert h.device == device and t.device == device
 
         B_pos = h.size(0)

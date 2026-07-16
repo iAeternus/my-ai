@@ -1,4 +1,3 @@
-"""RelationPredictionTrainer — 关系预测训练器"""
 from __future__ import annotations
 import logging
 

@@ -50,7 +50,7 @@ class NodeClassificationTrainer(BaseTrainer):
     @torch.no_grad()
     def _eval(self, data: Data, prefix: str = "val") -> tuple[float, dict[str, float]]:
         self.model.eval()
-        
+
         x = cast(Tensor, data.x).to(self.device)
         edge_index = cast(Tensor, data.edge_index).to(self.device)
         y = cast(Tensor, data.y).to(self.device)
@@ -58,6 +58,6 @@ class NodeClassificationTrainer(BaseTrainer):
         logits = self.model(x, edge_index)
         mask = data.val_mask if prefix == "val" else data.test_mask
         loss = self.criterion(logits[mask], y[mask]).item()
-        
+
         acc = accuracy(logits[mask], y[mask])
         return loss, {f"{prefix}_loss": loss, f"{prefix}_acc": acc}

@@ -38,9 +38,7 @@ def main() -> None:
 
     if args.train:
         history = trainer.train()
-        plot_train_history(
-            history, save=True, save_dir=cfg.output_dir / "history.png"
-        )
+        plot_train_history(history, save=True, save_dir=cfg.output_dir / "history.png")
     else:
         trainer.load_checkpoint(cfg.output_dir / cfg.save_name)
         sample = features[0]
