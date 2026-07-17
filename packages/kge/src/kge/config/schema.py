@@ -134,7 +134,7 @@ class Config:
 
     def _validate(self) -> None:
         """校验配置合法性"""
-        from kge.utils.early_stopping import MONITOR_MODES
+        from core.utils import MONITOR_MODES
 
         monitor = self.train.early_stopping.monitor
         if monitor not in MONITOR_MODES:

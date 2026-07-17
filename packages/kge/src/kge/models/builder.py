@@ -6,7 +6,7 @@ from torch import Tensor
 from kge.config.schema import Config, TaskType
 from kge.models.encoders import BaseKGEEncoder, KGE_ENCODER_REGISTRY
 from kge.models.heads import BaseHead, HEAD_REGISTRY
-from kge.utils.typing import dict_get_or_default
+from core.utils import dict_get_or_default
 
 
 class KGEModel(nn.Module):

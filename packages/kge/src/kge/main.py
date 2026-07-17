@@ -7,8 +7,7 @@ from kge.datasets import KGDataModule, load_dataset
 from kge.experiments import ExperimentManager
 from kge.models import build_model
 from kge.trainer import create_trainer
-from kge.utils import get_device, seed_everything, setup_logging
-from kge.utils.typing import dict_pop_or_default
+from core.utils import get_device, seed_everything, setup_logging, dict_pop_or_default
 
 logger = logging.getLogger(__name__)
 

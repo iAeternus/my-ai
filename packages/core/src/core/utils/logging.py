@@ -7,7 +7,9 @@ from pathlib import Path
 
 
 def setup_logging(
-    log_dir: str | Path | None = None, *, level: int = logging.INFO
+    log_dir: str | Path | None = None,
+    *,
+    level: int = logging.INFO,
 ) -> None:
     """配置同时输出到控制台和文件的日志
 

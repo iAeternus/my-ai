@@ -9,9 +9,12 @@ import torch
 from kge.config.schema import Config
 from kge.datasets.data_module import KGDataModule, KGBatch
 from kge.models.builder import KGEModel
-from kge.utils.early_stopping import EarlyStopping, MONITOR_MODES
-from kge.utils.checkpoint import CheckpointManager
-from kge.utils.typing import dict_pop_or_default
+from core.utils import (
+    EarlyStopping,
+    MONITOR_MODES,
+    CheckpointManager,
+    dict_pop_or_default,
+)
 
 logger = logging.getLogger(__name__)
 
