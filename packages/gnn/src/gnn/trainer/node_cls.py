@@ -8,7 +8,7 @@ from torch_geometric.data import Data
 
 from gnn.trainer.base import BaseTrainer
 from gnn.config import Config
-from gnn.utils.early_stopping import MONITOR_MODES
+from core.utils import MONITOR_MODES
 
 
 class NodeClassificationTrainer(BaseTrainer):

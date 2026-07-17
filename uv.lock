@@ -651,17 +651,15 @@ name = "gnn"
 version = "0.1.0"
 source = { editable = "packages/gnn" }
 dependencies = [
+    { name = "core" },
     { name = "ipykernel" },
-    { name = "pyyaml" },
-    { name = "torch" },
     { name = "torch-geometric" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "core", editable = "packages/core" },
     { name = "ipykernel", specifier = ">=7.3.0" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "torch", specifier = ">=2.12.1" },
     { name = "torch-geometric", specifier = ">=2.8.0" },
 ]
 

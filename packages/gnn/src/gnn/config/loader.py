@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
-from gnn.utils.early_stopping import MONITOR_MODES
+from core.utils import MONITOR_MODES
 import yaml
 
 from gnn.config.schema import (

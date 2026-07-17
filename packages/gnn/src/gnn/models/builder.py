@@ -1,6 +1,6 @@
 """模型组装工厂"""
 
-from gnn.utils.typing import get_param
+from core.utils import dict_get_or_default
 import torch
 from torch import nn, Tensor
 from gnn.config.schema import Config, TaskType
@@ -36,33 +36,33 @@ def build_model(cfg: Config, num_features: int, num_classes: int) -> GNNModel:
     encoder_cls = ENCODER_REGISTRY[cfg.model.name]
     encoder_params = {
         "in_dim": num_features,
-        "hidden_dim": get_param(cfg.model.params, "hidden_dim", 64),
-        "num_layers": get_param(cfg.model.params, "num_layers", 2),
-        "dropout": get_param(cfg.model.params, "dropout", 0.5),
-        "norm": get_param(cfg.model.params, "norm", "batch"),
-        "dropedge": get_param(cfg.model.params, "dropedge", 0.0),
+        "hidden_dim": dict_get_or_default(cfg.model.params, "hidden_dim", 64),
+        "num_layers": dict_get_or_default(cfg.model.params, "num_layers", 2),
+        "dropout": dict_get_or_default(cfg.model.params, "dropout", 0.5),
+        "norm": dict_get_or_default(cfg.model.params, "norm", "batch"),
+        "dropedge": dict_get_or_default(cfg.model.params, "dropedge", 0.0),
     }
     if cfg.model.name == "gat":
-        encoder_params["heads"] = get_param(cfg.model.params, "heads", 8)
+        encoder_params["heads"] = dict_get_or_default(cfg.model.params, "heads", 8)
     if cfg.model.name == "sage":
-        encoder_params["aggr"] = get_param(cfg.model.params, "aggr", "mean")
+        encoder_params["aggr"] = dict_get_or_default(cfg.model.params, "aggr", "mean")
 
     encoder = encoder_cls(**encoder_params)
 
     # head
-    hidden_dim = get_param(cfg.model.params, "hidden_dim", 64)
+    hidden_dim = dict_get_or_default(cfg.model.params, "hidden_dim", 64)
     if cfg.task == TaskType.NODE_CLASSIFICATION:
         head = NodeClassificationHead(
             hidden_dim=hidden_dim,
             num_classes=num_classes,
-            dropout=get_param(cfg.model.params, "dropout", 0.5),
+            dropout=dict_get_or_default(cfg.model.params, "dropout", 0.5),
         )
     elif cfg.task == TaskType.LINK_PREDICTION:
-        predictor_type = get_param(cfg.model.params, "link_predictor", "dot_product")
+        predictor_type = dict_get_or_default(cfg.model.params, "link_predictor", "dot_product")
         if predictor_type == "mlp":
             head = LinkPredictionMLPHead(
                 hidden_dim=hidden_dim,
-                dropout=get_param(cfg.model.params, "dropout", 0.5),
+                dropout=dict_get_or_default(cfg.model.params, "dropout", 0.5),
             )
         else:
             head = LinkPredictionHead()

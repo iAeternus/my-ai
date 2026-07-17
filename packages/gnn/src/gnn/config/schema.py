@@ -3,7 +3,7 @@ from enum import Enum
 import json
 from pathlib import Path
 from typing import Any
-from gnn.utils.early_stopping import MONITOR_MODES
+from core.utils import MONITOR_MODES
 
 
 class TaskType(str, Enum):

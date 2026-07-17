@@ -9,8 +9,7 @@ from torch import nn
 from torch_geometric.data import Data
 
 from gnn.config import Config
-from gnn.utils.early_stopping import EarlyStopping
-from gnn.utils.typing import pop_param
+from core.utils import EarlyStopping, dict_pop_or_default
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +35,12 @@ class BaseTrainer(ABC):
 
         # optimizer
         opt_params: dict[str, Any] = dict(cfg.optimizer.params)
-        lr = pop_param(opt_params, "lr", 0.01)
-        weight_decay = pop_param(opt_params, "weight_decay", 0.0)
+        lr = dict_pop_or_default(opt_params, "lr", 0.01)
+        weight_decay = dict_pop_or_default(opt_params, "weight_decay", 0.0)
 
         optimizer_cls = _get_optimizer_cls(cfg.optimizer.name)
         if cfg.optimizer.name == "sgd":
-            momentum = pop_param(opt_params, "momentum", 0.9)
+            momentum = dict_pop_or_default(opt_params, "momentum", 0.9)
             self.optimizer = optimizer_cls(
                 self.model.parameters(),
                 lr=lr,

@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, nn
 from gnn.trainer.base import BaseTrainer
 from gnn.config import Config
-from gnn.utils.early_stopping import MONITOR_MODES
+from core.utils import MONITOR_MODES
 
 
 class LinkPredictionTrainer(BaseTrainer):

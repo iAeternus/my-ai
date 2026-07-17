@@ -9,8 +9,7 @@ from gnn.datasets.splitter import split_link_prediction_data
 from gnn.experiments import ExperimentManager
 from gnn.models.builder import build_model
 from gnn.trainer.factory import create_trainer
-from gnn.utils.device import get_device
-from gnn.utils.logging import setup_logging
+from core.utils import get_device, setup_logging
 
 import torch
 import torch.nn.functional as F
