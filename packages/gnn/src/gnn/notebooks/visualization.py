@@ -17,7 +17,7 @@ from numpy.typing import NDArray
 from torch import Tensor
 from torch_geometric.data import Data
 
-# ── CJK 字体 ────────────────────────────────────────────────────
+# CJK 字体
 _CJK_FONT_CANDIDATES = [
     "Microsoft YaHei",
     "SimHei",
@@ -47,10 +47,6 @@ def _configure_cjk() -> None:
 
 _configure_cjk()
 
-# ══════════════════════════════════════════════════════════════════
-# 通用
-# ══════════════════════════════════════════════════════════════════
-
 
 def plot_training_curves(
     history: dict[str, list[float]],
@@ -72,7 +68,7 @@ def plot_training_curves(
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
     epochs = list(range(1, len(history.get("loss", [])) + 1))
 
-    # ── Loss ──
+    #  Loss
     if "loss" in history:
         ax1.plot(epochs, history["loss"], label="Train Loss", linewidth=1.2)
     if "val_loss" in history:
@@ -92,7 +88,7 @@ def plot_training_curves(
     ax1.grid(True, alpha=0.3)
     ax1.set_title("Loss 曲线")
 
-    # ── Metric ──
+    # Metric
     train_key = metric_key
     val_key = f"val_{metric_key}"
     if train_key in history:
@@ -131,11 +127,6 @@ def plot_training_curves(
 
     fig.tight_layout()
     return fig
-
-
-# ══════════════════════════════════════════════════════════════════
-# 节点分类
-# ══════════════════════════════════════════════════════════════════
 
 
 def plot_class_distribution(data: Data) -> Figure:
@@ -203,7 +194,7 @@ def plot_confusion_matrix(
         row_sums[row_sums == 0] = 1
         cm_display = cm_display / row_sums
         fmt = ".2f"
-        title = "混淆矩阵（行归一化 → 召回率）"
+        title = "混淆矩阵（行归一化 -> 召回率）"
     else:
         cm_display = cm
         fmt = "d"
@@ -291,9 +282,11 @@ def plot_tsne_embeddings(
                     s=12,
                     alpha=0.6,
                     edgecolors="none",
-                    label=f"Class {label_idx} ({split_name})"
-                    if split_name == "train"
-                    else "",
+                    label=(
+                        f"Class {label_idx} ({split_name})"
+                        if split_name == "train"
+                        else ""
+                    ),
                 )
         else:
             subset = labels == label_idx
@@ -350,11 +343,6 @@ def plot_tsne_embeddings(
     return fig
 
 
-# ══════════════════════════════════════════════════════════════════
-# 链接预测
-# ══════════════════════════════════════════════════════════════════
-
-
 def plot_edge_split_summary(
     train_data: Data,
     val_data: Data,
@@ -367,7 +355,7 @@ def plot_edge_split_summary(
     """
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 
-    # ── 左：各 split 边数量 ──
+    # 左：各 split 边数量
     splits = []
     pos_counts = []
     neg_counts = []
@@ -394,7 +382,7 @@ def plot_edge_split_summary(
     axes[0].legend(fontsize=8)
     axes[0].grid(True, alpha=0.2, axis="y")
 
-    # ── 右：正负样本比例饼图 ──
+    # 右：正负样本比例饼图
     total_pos = sum(pos_counts)
     total_neg = sum(neg_counts)
     axes[1].pie(

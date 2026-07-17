@@ -5,7 +5,7 @@
 #
 # 用法:
 #   uv run kge --config config/link_prediction-baseline.yaml --encoder trans-e --dataset fb15k-237
-#   uv run kge --config config/link_prediction-baseline.yaml --encoder rotate --dataset wn18rr
+#   uv run kge --config config/link_prediction-baseline.yaml --encoder rotat-e --dataset wn18rr
 
 task: link_prediction
 

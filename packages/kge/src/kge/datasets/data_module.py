@@ -130,9 +130,9 @@ class KGDataModule:
         """根据配置自动选择负采样器
 
         优先级:
-            1. 若 adversarial_temperature > 0 → SelfAdversarialNegativeSampler
-            2. 若 sampler_name == "bernoulli" → BernoulliNegativeSampler (需 tph/hpt)
-            3. 默认 → UniformNegativeSampler
+            1. 若 adversarial_temperature > 0 -> SelfAdversarialNegativeSampler
+            2. 若 sampler_name == "bernoulli" -> BernoulliNegativeSampler (需 tph/hpt)
+            3. 默认 -> UniformNegativeSampler
         """
         sampler_name = getattr(self.cfg.dataset, "sampler_name", None)
 

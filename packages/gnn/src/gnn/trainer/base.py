@@ -9,6 +9,7 @@ from torch import nn
 from torch_geometric.data import Data
 
 from gnn.config import Config
+from core.trainer import OPTIMIZER_REGISTRY
 from core.utils import EarlyStopping, dict_pop_or_default
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class BaseTrainer(ABC):
         lr = dict_pop_or_default(opt_params, "lr", 0.01)
         weight_decay = dict_pop_or_default(opt_params, "weight_decay", 0.0)
 
-        optimizer_cls = _get_optimizer_cls(cfg.optimizer.name)
+        optimizer_cls = OPTIMIZER_REGISTRY[cfg.optimizer.name]
         if cfg.optimizer.name == "sgd":
             momentum = dict_pop_or_default(opt_params, "momentum", 0.9)
             self.optimizer = optimizer_cls(
@@ -162,13 +163,4 @@ class BaseTrainer(ABC):
             self.model.load_state_dict(state)
 
 
-def _get_optimizer_cls(name: str) -> type[torch.optim.Optimizer]:
-    """根据配置名称返回优化器类"""
-    _OPTIMIZERS: dict[str, type[torch.optim.Optimizer]] = {
-        "adam": torch.optim.Adam,
-        "adamw": torch.optim.AdamW,
-        "sgd": torch.optim.SGD,
-    }
-    if name not in _OPTIMIZERS:
-        raise ValueError(f"未知的优化器: {name!r}，可选: {list(_OPTIMIZERS.keys())}")
-    return _OPTIMIZERS[name]
+

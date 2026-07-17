@@ -9,6 +9,10 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, GINConv, SAGEConv
 from torch_geometric.utils import dropout_edge
 
+from core import Registry
+
+ENCODER_REGISTRY = Registry[type[nn.Module]]("gnn encoder", base_class=nn.Module)
+
 
 def _make_norm(hidden_dim: int, norm_type: str) -> nn.Module:
     """创建归一化层"""
@@ -17,6 +21,7 @@ def _make_norm(hidden_dim: int, norm_type: str) -> nn.Module:
     return nn.BatchNorm1d(hidden_dim)
 
 
+@ENCODER_REGISTRY.register("gcn")
 class GCNEncoder(nn.Module):
     """多层 GCNConv + Norm + ReLU + Dropout"""
 
@@ -57,6 +62,7 @@ class GCNEncoder(nn.Module):
         return x
 
 
+@ENCODER_REGISTRY.register("gat")
 class GATEncoder(nn.Module):
     """多头注意力，最后一层单头输出 hidden_dim"""
 
@@ -102,6 +108,7 @@ class GATEncoder(nn.Module):
         return x
 
 
+@ENCODER_REGISTRY.register("gin")
 class GINEncoder(nn.Module):
     """GINConv(MLP) + Norm
 
@@ -151,6 +158,7 @@ class GINEncoder(nn.Module):
         return x
 
 
+@ENCODER_REGISTRY.register("sage")
 class SAGEEncoder(nn.Module):
     """SAGEConv + Norm + ReLU + Dropout"""
 
@@ -192,9 +200,3 @@ class SAGEEncoder(nn.Module):
         return x
 
 
-ENCODER_REGISTRY: dict[str, type[nn.Module]] = {
-    "gcn": GCNEncoder,
-    "gat": GATEncoder,
-    "gin": GINEncoder,
-    "sage": SAGEEncoder,
-}

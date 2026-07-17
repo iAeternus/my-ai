@@ -1,20 +1,18 @@
 from __future__ import annotations
-import os
 import tarfile
 import urllib.request
 from pathlib import Path
 
 import torch
-from torch import Tensor
 
 from kge.utils.paths import DATA_DIR
 from kge.datasets.base import BaseKGDataset
-from kge.datasets.registry import KGDatasetRegistry
+from kge.datasets.registry import KG_DATASET_REGISTRY
 
 WN18RR_URL = "https://raw.githubusercontent.com/TimDettmers/ConvE/master/WN18RR.tar.gz"
 
 
-@KGDatasetRegistry.register("wn18rr")
+@KG_DATASET_REGISTRY.register("wn18rr")
 class WN18RRDataset(BaseKGDataset):
     """WN18RR: 40,943 entities, 11 relations, 87K train, 3K valid, 3K test"""
 

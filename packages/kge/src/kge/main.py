@@ -1,13 +1,18 @@
 from __future__ import annotations
 import logging
 
-from kge.utils.paths import PROJECT_ROOT
 from kge.config import from_cli, parse_args
 from kge.datasets import KGDataModule, load_dataset
 from kge.experiments import ExperimentManager
 from kge.models import build_model
 from kge.trainer import create_trainer
-from core.utils import get_device, seed_everything, setup_logging, dict_pop_or_default
+from core.utils import (
+    get_device,
+    seed_everything,
+    setup_logging,
+    dict_pop_or_default,
+)
+from kge.utils.paths import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 

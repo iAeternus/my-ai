@@ -3,7 +3,7 @@ import pkgutil
 
 from kge.utils.paths import DATA_DIR
 from kge.datasets.base import BaseKGDataset
-from kge.datasets.registry import KGDatasetRegistry
+from kge.datasets.registry import KG_DATASET_REGISTRY
 from kge.datasets.data_module import KGDataModule, KGBatch
 from kge.datasets.sampler import (
     NegativeSampler,
@@ -20,13 +20,13 @@ for _module_info in pkgutil.iter_modules(__path__):
 
 
 def load_dataset(name: str, root: str = str(DATA_DIR)) -> BaseKGDataset:
-    dataset_cls = KGDatasetRegistry.get(name)
+    dataset_cls = KG_DATASET_REGISTRY[name]
     return dataset_cls(root=root)
 
 
 __all__ = [
     "BaseKGDataset",
-    "KGDatasetRegistry",
+    "KG_DATASET_REGISTRY",
     "KGDataModule",
     "KGBatch",
     "NegativeSampler",

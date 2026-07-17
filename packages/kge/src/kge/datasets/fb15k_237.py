@@ -3,18 +3,17 @@ import os
 from pathlib import Path
 import urllib.request
 import torch
-from torch import Tensor
 
 from kge.utils.paths import DATA_DIR
 from kge.datasets.base import BaseKGDataset
-from kge.datasets.registry import KGDatasetRegistry
+from kge.datasets.registry import KG_DATASET_REGISTRY
 
 FB15K237_URL = (
     "https://raw.githubusercontent.com/TimDettmers/ConvE/master/FB15k-237.tar.gz"
 )
 
 
-@KGDatasetRegistry.register("fb15k-237")
+@KG_DATASET_REGISTRY.register("fb15k-237")
 class FB15k237Dataset(BaseKGDataset):
     """FB15k-237: 14,541 entities, 237 relations, 272K train, 17K valid, 20K test"""
 

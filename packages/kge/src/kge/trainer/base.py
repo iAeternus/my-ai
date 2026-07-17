@@ -9,6 +9,7 @@ import torch
 from kge.config.schema import Config
 from kge.datasets.data_module import KGDataModule, KGBatch
 from kge.models.builder import KGEModel
+from core.trainer import OPTIMIZER_REGISTRY
 from core.utils import (
     EarlyStopping,
     MONITOR_MODES,
@@ -17,12 +18,6 @@ from core.utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-_OPTIMIZERS: dict[str, type[torch.optim.Optimizer]] = {
-    "adam": torch.optim.Adam,
-    "adamw": torch.optim.AdamW,
-    "sgd": torch.optim.SGD,
-}
 
 
 class BaseTrainer(ABC):
@@ -60,7 +55,7 @@ class BaseTrainer(ABC):
             "weight_decay",
             cfg.train.weight_decay,
         )
-        optimizer_cls = _OPTIMIZERS.get(opt_cfg.name, torch.optim.Adam)
+        optimizer_cls = OPTIMIZER_REGISTRY[opt_cfg.name]
         self.optimizer = optimizer_cls(
             self.model.parameters(),
             lr=lr,

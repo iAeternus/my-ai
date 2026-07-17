@@ -1,11 +1,15 @@
 from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
-from typing import Callable, TypeAlias, TypeVar, cast
+from typing import TypeAlias, cast
+from core.utils.typing import dict_get_or_default
+from kge.config.schema import Config
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+
+from core import Registry
 
 RelationEmbedding: TypeAlias = nn.Embedding | nn.ModuleDict
 
@@ -45,6 +49,16 @@ class BaseKGEEncoder(nn.Module, ABC):
     def _build_relation_embedding(self) -> RelationEmbedding:
         """子类覆写以返回 ModuleDict (TransH/TransR/PairRE)"""
         return nn.Embedding(self.num_relations, self.embedding_dim)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> BaseKGEEncoder:
+        raise NotImplementedError
 
     def reset_parameters(self) -> None:
         bound = 6.0 / math.sqrt(self.embedding_dim)
@@ -153,19 +167,12 @@ class BaseKGEEncoder(nn.Module, ABC):
         return torch.tensor(0.0, device=self.entity_embedding.weight.device)
 
 
-KGE_ENCODER_REGISTRY: dict[str, type[BaseKGEEncoder]] = {}
-T = TypeVar("T", bound=type[BaseKGEEncoder])
+ENCODER_REGISTRY = Registry[type[BaseKGEEncoder]](
+    "kge encoder", base_class=BaseKGEEncoder
+)
 
 
-def register(name: str) -> Callable[[T], T]:
-    def dec(cls):
-        KGE_ENCODER_REGISTRY[name] = cls
-        return cls
-
-    return dec
-
-
-@register("trans-e")
+@ENCODER_REGISTRY.register("trans-e")
 class TransEEncoder(BaseKGEEncoder):
     """得分 = gamma - ||h + r - t||_p"""
 
@@ -183,6 +190,23 @@ class TransEEncoder(BaseKGEEncoder):
         self.gamma = gamma
         self.p_norm = p_norm
         super().__init__(num_entities, num_relations, embedding_dim, **kwargs)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            gamma=dict_get_or_default(p, "gamma", 12.0),
+            p_norm=dict_get_or_default(p, "p_norm", 1),
+        )
 
     def reset_parameters(self) -> None:
         bound = 6.0 / math.sqrt(self.embedding_dim)
@@ -205,7 +229,7 @@ class TransEEncoder(BaseKGEEncoder):
         return self._embedding_regularize(h, r, t, p=2)
 
 
-@register("trans-h")
+@ENCODER_REGISTRY.register("trans-h")
 class TransHEncoder(BaseKGEEncoder):
     """超平面平移，得分 = gamma - ||proj(h, w) + r - proj(t, w)||"""
 
@@ -235,6 +259,23 @@ class TransHEncoder(BaseKGEEncoder):
     def _get_relation_embedding(self, r: Tensor) -> Tensor:
         assert isinstance(self.relation_embedding, nn.ModuleDict)
         return cast(nn.Embedding, self.relation_embedding["r"])(r)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            gamma=dict_get_or_default(p, "gamma", 12.0),
+            p_norm=dict_get_or_default(p, "p_norm", 1),
+        )
 
     def reset_parameters(self) -> None:
         bound = 6.0 / math.sqrt(self.embedding_dim)
@@ -288,7 +329,7 @@ class TransHEncoder(BaseKGEEncoder):
         return entity_reg + rel_reg + (ortho_h + ortho_t) * 0.01 + w_norm_reg
 
 
-@register("trans-r")
+@ENCODER_REGISTRY.register("trans-r")
 class TransREncoder(BaseKGEEncoder):
     """关系空间平移，得分 = gamma - ||M_r(h) + r - M_r(t)||_p"""
 
@@ -317,6 +358,24 @@ class TransREncoder(BaseKGEEncoder):
                     self.num_relations, self.relation_dim * self.embedding_dim
                 ),
             }
+        )
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            gamma=dict_get_or_default(p, "gamma", 12.0),
+            p_norm=dict_get_or_default(p, "p_norm", 1),
+            relation_dim=dict_get_or_default(p, "relation_dim", 100),
         )
 
     def reset_parameters(self) -> None:
@@ -371,7 +430,7 @@ class TransREncoder(BaseKGEEncoder):
         return entity_reg + rel_reg + M_reg
 
 
-@register("dist-mult")
+@ENCODER_REGISTRY.register("dist-mult")
 class DistMultEncoder(BaseKGEEncoder):
     """双线性对角模型，得分 = sum(h * r * t)"""
 
@@ -387,7 +446,7 @@ class DistMultEncoder(BaseKGEEncoder):
         return self._embedding_regularize(h, r, t, p=3)
 
 
-@register("compl-ex")
+@ENCODER_REGISTRY.register("compl-ex")
 class ComplExEncoder(BaseKGEEncoder):
     """复数嵌入，得分 = Re(Σ h * r * conj(t))"""
 
@@ -423,7 +482,7 @@ class ComplExEncoder(BaseKGEEncoder):
         return self._embedding_regularize(h, r, t, p=3)
 
 
-@register("rotat-e")
+@ENCODER_REGISTRY.register("rotat-e")
 class RotatEEncoder(BaseKGEEncoder):
     """复数旋转，得分 = gamma - ||h ∘ r - t||   (r 在复平面单位圆上)"""
 
@@ -448,6 +507,23 @@ class RotatEEncoder(BaseKGEEncoder):
     def _build_relation_embedding(self) -> nn.Embedding:
         # 关系只存相位角 θ ∈ [0, 2π)
         return nn.Embedding(self.num_relations, self.embedding_dim)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            gamma=dict_get_or_default(p, "gamma", 12.0),
+            epsilon=dict_get_or_default(p, "epsilon", 2.0),
+        )
 
     def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.entity_embedding.weight)
@@ -484,7 +560,7 @@ class RotatEEncoder(BaseKGEEncoder):
         return self._embedding_regularize(h, t, p=2)
 
 
-@register("pair-re")
+@ENCODER_REGISTRY.register("pair-re")
 class PairREEncoder(BaseKGEEncoder):
     """成对关系向量，得分 = gamma - ||h * r^H - t * r^T||"""
 
@@ -513,6 +589,23 @@ class PairREEncoder(BaseKGEEncoder):
 
     def _get_relation_emb(self, r: Tensor) -> Tensor:
         return cast(nn.Embedding, self.relation_embedding["rh"])(r)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            gamma=dict_get_or_default(p, "gamma", 12.0),
+            p_norm=dict_get_or_default(p, "p_norm", 1),
+        )
 
     def reset_parameters(self) -> None:
         bound = 6.0 / math.sqrt(self.embedding_dim)
@@ -546,7 +639,7 @@ class PairREEncoder(BaseKGEEncoder):
         return self._embedding_regularize(h, rh, rt, t, p=2)
 
 
-@register("conv-e")
+@ENCODER_REGISTRY.register("conv-e")
 class ConvEEncoder(BaseKGEEncoder):
     """2D 卷积 + FC + 与尾实体内积"""
 
@@ -581,6 +674,26 @@ class ConvEEncoder(BaseKGEEncoder):
 
     def _build_relation_embedding(self) -> nn.Embedding:
         return nn.Embedding(self.num_relations, self.embedding_dim)
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        num_entities: int,
+        num_relations: int,
+    ) -> TransEEncoder:
+        p = cfg.model.params
+        return cls(
+            num_entities=num_entities,
+            num_relations=num_relations,
+            embedding_dim=dict_get_or_default(p, "embedding_dim", 100),
+            conv_out_channels=dict_get_or_default(p, "conv_out_channels", 32),
+            kernel_size=dict_get_or_default(p, "kernel_size", 3),
+            input_dropout=dict_get_or_default(p, "input_dropout", 0.2),
+            feature_dropout=dict_get_or_default(p, "feature_dropout", 0.2),
+            hidden_dropout=dict_get_or_default(p, "hidden_dropout", 0.3),
+        )
 
     def reset_parameters(self) -> None:
         nn.init.xavier_uniform_(self.entity_embedding.weight)
@@ -640,7 +753,7 @@ class ConvEEncoder(BaseKGEEncoder):
             p=self.hidden_dropout,
             training=self.training,
         )
-        # 矩阵乘法：(B, d) @ (d, E) → (B, E)
+        # 矩阵乘法：(B, d) @ (d, E) -> (B, E)
         return x @ self.entity_embedding.weight.T
 
     def regularize(self, head: Tensor, relation: Tensor, tail: Tensor) -> Tensor:
@@ -653,7 +766,7 @@ class ConvEEncoder(BaseKGEEncoder):
 Quaternion: TypeAlias = tuple[Tensor, Tensor, Tensor, Tensor]
 
 
-@register("quat-e")
+@ENCODER_REGISTRY.register("quat-e")
 class QuatEEncoder(BaseKGEEncoder):
     """四元数嵌入，得分 = (h ⊗ r^◁) · t    (Hamilton 积 + 四元数内积)"""
 

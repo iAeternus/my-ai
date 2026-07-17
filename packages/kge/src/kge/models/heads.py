@@ -1,5 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from core.utils.typing import dict_get_or_default
+from kge.config.schema import Config
 from kge.models.encoders import BaseKGEEncoder
 import torch
 import torch.nn as nn
@@ -9,6 +11,16 @@ from torch import Tensor
 
 class BaseHead(nn.Module, ABC):
     """预测头基类"""
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        encoder: BaseKGEEncoder,
+        num_relations: int,
+    ) -> BaseHead:
+        raise NotImplementedError
 
     @abstractmethod
     def forward(
@@ -26,6 +38,16 @@ class LinkPredictionHead(BaseHead):
     def __init__(self, encoder: BaseKGEEncoder) -> None:
         super().__init__()
         self.encoder = encoder
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        encoder: BaseKGEEncoder,
+        num_relations: int,
+    ) -> BaseHead:
+        return cls(encoder=encoder)
 
     def forward(
         self,
@@ -53,6 +75,22 @@ class RelationPredictionHead(BaseHead):
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, num_relations),
+        )
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        encoder: BaseKGEEncoder,
+        num_relations: int,
+    ) -> BaseHead:
+        p = cfg.model.params
+        return cls(
+            embedding_dim=encoder.embedding_dim,
+            num_relations=num_relations,
+            hidden_dim=dict_get_or_default(p, "hidden_dim", 256),
+            dropout=dict_get_or_default(p, "hidden_dropout", 0.3),
         )
 
     def forward(
@@ -83,6 +121,21 @@ class TripleClassificationHead(BaseHead):
             nn.Linear(hidden_dim, 2),
         )
 
+    @classmethod
+    def from_config(
+        cls,
+        cfg: Config,
+        *,
+        encoder: BaseKGEEncoder,
+        num_relations: int,
+    ) -> BaseHead:
+        p = cfg.model.params
+        return cls(
+            embedding_dim=encoder.embedding_dim,
+            hidden_dim=dict_get_or_default(p, "hidden_dim", 256),
+            dropout=dict_get_or_default(p, "hidden_dropout", 0.3),
+        )
+
     def forward(
         self,
         h_emb: Tensor,
@@ -107,10 +160,11 @@ class EntitySimilarityHead(BaseHead):
         return h_emb
 
 
-# 注册字典
-HEAD_REGISTRY: dict[str, type[BaseHead]] = {
-    "link_prediction": LinkPredictionHead,
-    "relation_prediction": RelationPredictionHead,
-    "triple_classification": TripleClassificationHead,
-    "entity_similarity": EntitySimilarityHead,
-}
+from core import Registry
+
+HEAD_REGISTRY = Registry[type[BaseHead]]("kge head", base_class=BaseHead)
+
+HEAD_REGISTRY.register("link_prediction")(LinkPredictionHead)
+HEAD_REGISTRY.register("relation_prediction")(RelationPredictionHead)
+HEAD_REGISTRY.register("triple_classification")(TripleClassificationHead)
+HEAD_REGISTRY.register("entity_similarity")(EntitySimilarityHead)
