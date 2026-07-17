@@ -10,7 +10,7 @@ from pathlib import Path
 
 from core.utils.paths import PROJECT_ROOT, PackagePaths, get_package_root
 
-# ── GNN 包级路径 ───────────────────────────────────────────────────────
+# GNN package paths
 
 _pkg = PackagePaths(get_package_root(__file__))
 
@@ -27,7 +27,7 @@ CONFIG_DIR: Path = _pkg.config_dir
 """GNN 配置文件目录：``<PACKAGE_ROOT>/config/``"""
 
 
-# ── 路径解析 ───────────────────────────────────────────────────────────
+# Path resolution
 
 
 def resolve_path(path: str | Path) -> Path:
@@ -39,7 +39,7 @@ def resolve_path(path: str | Path) -> Path:
     if p.is_absolute():
         return p
 
-    # [legacy] 兼容旧 monorepo 前缀
+    # 兼容旧 monorepo 前缀
     s = str(p).replace("\\", "/")
     legacy_prefix = "packages/gnn/"
     if s.startswith(legacy_prefix):

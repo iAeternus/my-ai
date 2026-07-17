@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 TBatch = TypeVar("TBatch")
 
 
-# ── 工具函数 ───────────────────────────────────────────────────────────
+# Utility functions
 
 
 def should_compile(compile_mode: str | bool, device: torch.device) -> bool:

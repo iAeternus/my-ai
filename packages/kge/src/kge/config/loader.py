@@ -26,7 +26,7 @@ from kge.config.schema import (
 )
 from kge.utils.paths import DATA_DIR, OUTPUT_DIR, PACKAGE_ROOT, resolve_path
 
-# ── CLI 参数名 → 嵌套字典路径映射（KGE 特有）─────────────────────────
+# CLI arg name to nested dict path mapping (KGE-specific)
 
 _OVERRIDE_MAP: dict[str, list[str]] = {
     "task": ["task"],
@@ -63,7 +63,7 @@ _OVERRIDE_MAP: dict[str, list[str]] = {
 }
 
 
-# ── 配置加载（委托给 core）────────────────────────────────────────────
+# Config loading (delegates to core)
 
 
 def from_yaml(path: str | Path) -> Config:
@@ -162,5 +162,4 @@ def from_cli(
     )
 
 
-# [已删除] _apply_overrides() —— 由 core.apply_overrides 替代
-# [已删除] _set_nested()       —— 由 core.set_nested 替代
+# 以下函数已删除，由 core.apply_overrides / core.set_nested 替代

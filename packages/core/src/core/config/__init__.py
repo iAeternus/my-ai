@@ -16,7 +16,7 @@ import yaml
 
 T = TypeVar("T")
 
-# ── 可复用的 base dataclass ──────────────────────────────────────────
+# Base dataclasses
 
 
 @dataclass(slots=True, frozen=True)
@@ -54,7 +54,7 @@ class BaseOptimizerConfig:
     params: dict[str, object] = field(default_factory=dict)
 
 
-# ── 配置序列化 mixin ───────────────────────────────────────────────────
+# SerializableConfig mixin
 
 
 class SerializableConfig:
@@ -80,7 +80,7 @@ class SerializableConfig:
             json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
 
 
-# ── 校验工具 ───────────────────────────────────────────────────────────
+# Validation
 
 
 def validate_monitor(monitor: str, *, monitor_modes: dict[str, str]) -> None:
@@ -100,7 +100,7 @@ def validate_monitor(monitor: str, *, monitor_modes: dict[str, str]) -> None:
         )
 
 
-# ── 纯函数：配置加载 ─────────────────────────────────────────────────
+# Config loading functions
 
 
 def load_config_from_yaml(
@@ -180,7 +180,7 @@ def load_config_from_cli(
     return config
 
 
-# ── 纯函数：字典嵌套操作 ─────────────────────────────────────────────
+# Dict utilities
 
 
 def set_nested(d: dict, keys: list[str], value: Any) -> None:

@@ -26,7 +26,7 @@ from gnn.config.schema import (
 )
 from gnn.utils.paths import DATA_DIR, OUTPUT_DIR, resolve_config, resolve_path
 
-# ── CLI 参数名 → 嵌套字典路径映射（GNN 特有）─────────────────────────
+# CLI arg name to nested dict path mapping (GNN-specific)
 
 _OVERRIDE_MAP: dict[str, list[str]] = {
     "task": ["task"],
@@ -46,7 +46,7 @@ _OVERRIDE_MAP: dict[str, list[str]] = {
 }
 
 
-# ── 配置加载（委托给 core）────────────────────────────────────────────
+# Config loading (delegates to core)
 
 
 def from_yaml(path: str | Path) -> Config:
@@ -112,7 +112,7 @@ def from_cli(
     )
 
 
-# ── 内部辅助 ──────────────────────────────────────────────────────────
+# Internal helpers
 
 
 def _parse_train(data: dict[str, Any]) -> dict[str, Any]:
@@ -121,5 +121,4 @@ def _parse_train(data: dict[str, Any]) -> dict[str, Any]:
     return {**data, "early_stopping": EarlyStoppingConfig(**early_stopping)}
 
 
-# [已删除] apply_cli_overrides() —— 由 core.apply_overrides 替代
-# [已删除] _set_nested()          —— 由 core.set_nested 替代
+# 以下函数已删除，由 core.apply_overrides / core.set_nested 替代

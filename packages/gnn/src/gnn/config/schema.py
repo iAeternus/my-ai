@@ -134,7 +134,7 @@ class Config(SerializableConfig):
                 f"仅支持: node_classification, link_prediction"
             )
 
-        # [shared] 委托给 core 统一校验
+        # 委托给 core 统一校验
         validate_monitor(
             self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
         )

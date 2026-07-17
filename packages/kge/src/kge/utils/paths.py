@@ -10,7 +10,7 @@ from pathlib import Path
 
 from core.utils.paths import PROJECT_ROOT, PackagePaths, get_package_root
 
-# ── KGE 包级路径 ───────────────────────────────────────────────────────
+# KGE package paths
 
 _pkg = PackagePaths(get_package_root(__file__))
 
@@ -24,7 +24,7 @@ OUTPUT_DIR: Path = _pkg.output_dir
 """KGE 实验输出根目录：``<PACKAGE_ROOT>/outputs/``"""
 
 
-# ── 路径解析（向后兼容）─────────────────────────────────────────────────
+# Path resolution (backward compatible)
 
 
 def resolve_path(path: str | Path) -> Path:
@@ -39,7 +39,7 @@ def resolve_path(path: str | Path) -> Path:
     if p.is_absolute():
         return p
 
-    # [legacy] 兼容旧 monorepo 前缀
+    # 兼容旧 monorepo 前缀
     s = str(p).replace("\\", "/")
     legacy_prefix = "packages/kge/"
     if s.startswith(legacy_prefix):

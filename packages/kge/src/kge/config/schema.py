@@ -140,7 +140,7 @@ class Config(SerializableConfig):
         """校验配置合法性"""
         from core.utils import MONITOR_MODES
 
-        # [shared] 委托给 core 统一校验
+        # 委托给 core 统一校验
         validate_monitor(
             self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
         )

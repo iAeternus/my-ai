@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-# ── 项目（monorepo）根 ──────────────────────────────────────────────────
+# Monorepo root
 
 
 def _find_project_root() -> Path:
@@ -28,7 +28,7 @@ def _find_project_root() -> Path:
 PROJECT_ROOT = _find_project_root()
 """monorepo 根目录（绝对路径）——最顶层 ``pyproject.toml`` 所在目录"""
 
-# [deprecated] 以下两个模块级常量仅指向 monorepo 根，不推荐直接使用。
+# 以下两个模块级常量仅指向 monorepo 根，不推荐直接使用
 # 各子包应使用 ``PackagePaths`` 获取包级 data / outputs 目录。
 DATA_DIR = PROJECT_ROOT / "data"
 """.. deprecated:: 使用 ``PackagePaths.data_dir`` 替代"""
@@ -37,7 +37,7 @@ OUTPUT_DIR = PROJECT_ROOT / "outputs"
 """.. deprecated:: 使用 ``PackagePaths.output_dir`` 替代"""
 
 
-# ── 子包根 ─────────────────────────────────────────────────────────────
+# Package root
 
 
 def get_package_root(caller_file: str | Path) -> Path:
@@ -110,7 +110,7 @@ class PackagePaths:
         return (self.root / p).resolve()
 
 
-# ── 通用路径解析（保留向后兼容）─────────────────────────────────────────
+# Backward-compatible path resolution
 
 
 def resolve_path(path: str | Path) -> Path:

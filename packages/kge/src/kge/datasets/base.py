@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from core.datasets.base import BaseDataset, ensure_loaded  # [shared] 统一从 core 导入
+from core.datasets.base import BaseDataset, ensure_loaded  # 统一从 core 导入
 
 
 class BaseKGDataset(BaseDataset):
@@ -29,7 +29,7 @@ class BaseKGDataset(BaseDataset):
     name: str = ""
 
     def __init__(self, root: str | Path) -> None:
-        # [shared] super().__init__() 设置 self.root 和 self._loaded
+        # super().__init__() 设置 self.root 和 self._loaded
         super().__init__(root)
 
         # 占位张量：_load() 中会被替换为实际数据
@@ -43,7 +43,7 @@ class BaseKGDataset(BaseDataset):
         self._id_to_entity: dict[int, str] = {}
         self._id_to_relation: dict[int, str] = {}
 
-    # ── 抽象属性 ────────────────────────────────────────────────────
+    # Abstract properties
 
     @property
     @abstractmethod
@@ -53,7 +53,7 @@ class BaseKGDataset(BaseDataset):
     @abstractmethod
     def num_relations(self) -> int: ...
 
-    # ── PyTorch Dataset 接口 ────────────────────────────────────────
+    # PyTorch Dataset interface
 
     @ensure_loaded
     def __len__(self) -> int:
@@ -64,14 +64,14 @@ class BaseKGDataset(BaseDataset):
         h, r, t = self._train_triples[idx]
         return int(h), int(r), int(t)
 
-    # ── 子类实现 ────────────────────────────────────────────────────
+    # Subclass contract
 
     @abstractmethod
     def _load(self) -> None:
         """子类实现：加载数据到 self._train/_val/_test_triples"""
         ...
 
-    # ── 三元组属性（延迟加载）───────────────────────────────────────
+    # Triplet properties (lazy-loaded)
 
     @property
     @ensure_loaded
@@ -121,7 +121,7 @@ class BaseKGDataset(BaseDataset):
     def get_id_to_relation(self) -> dict[int, str]:
         return self._id_to_relation
 
-    # ── 工具方法 ────────────────────────────────────────────────────
+    # Utility
 
     @staticmethod
     def _read_triples(
