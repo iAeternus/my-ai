@@ -1,8 +1,7 @@
-"""KGE 训练 CLI 入口"""
-
 from __future__ import annotations
 import logging
 
+from kge.utils.paths import PROJECT_ROOT
 from kge.config import from_cli, parse_args
 from kge.datasets import KGDataModule, load_dataset
 from kge.experiments import ExperimentManager
@@ -20,7 +19,7 @@ def main(argv: list[str] | None = None) -> None:
     config_path = dict_pop_or_default(
         cli_overrides,
         "config",
-        "config/link_prediction-baseline.yaml",
+        str(PROJECT_ROOT / "config" / "link_prediction-baseline.yaml"),
     )
 
     # 配置

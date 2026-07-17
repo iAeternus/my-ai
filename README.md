@@ -9,6 +9,7 @@ my-ai/
 ├── packages/
 │   ├── iris_logistic_regression/   # 鸢尾花分类
 │   └── gnn/                        # 图神经网络
+│   └── kge/                        # 知识图谱嵌入
 ├── pyproject.toml                  # uv workspace 根配置
 └── uv.lock
 ```
@@ -26,7 +27,8 @@ uv sync
 | 项目 | 说明 | 状态 |
 |---|---|---|
 | [iris_logistic_regression](packages/iris_logistic_regression/) | 基于鸢尾花数据集的前馈神经网络 | 已完成 |
-| gnn | 基于 PyTorch Geometric 的图神经网络 (Cora, CiteSeer, PubMed) | 开发中 |
+| gnn | 在Cora/CiteSeer/PubMed上基于GNN实现引用预测和节点分类 | 已完成 |
+| kge | 在FB15k-237/WN18RR上基于KGE实现链接预测、关系预测、三元组分类 | 开发中 |
 
 ## 开发
 

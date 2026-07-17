@@ -7,7 +7,6 @@ task: relation_prediction
 
 dataset:
   name: fb15k-237
-  root: packages/kge/data
   batch_size: 1024
 
 model:
@@ -35,5 +34,4 @@ train:
 
 experiment:
   name_prefix: kge_rp
-  save_dir: packages/kge/outputs
   seeds: [42, 123, 456]

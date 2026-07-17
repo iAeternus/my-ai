@@ -7,7 +7,6 @@ task: link_prediction
 
 dataset:
   name: fb15k-237
-  root: packages/kge/data
   batch_size: 1024
   num_negative_samples: 256
 
@@ -36,5 +35,4 @@ train:
 
 experiment:
   name_prefix: kge_rotate
-  save_dir: packages/kge/outputs
   seeds: [42, 123, 456, 789, 1024]
