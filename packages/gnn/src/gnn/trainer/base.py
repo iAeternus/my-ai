@@ -9,7 +9,7 @@ from torch import nn
 from torch_geometric.data import Data
 
 from gnn.config import Config
-from core.trainer import OPTIMIZER_REGISTRY
+from core.trainer import OPTIMIZER_REGISTRY, should_compile
 from core.utils import CheckpointManager, EarlyStopping, dict_pop_or_default
 
 logger = logging.getLogger(__name__)
@@ -27,12 +27,8 @@ class BaseTrainer(ABC):
         self.device = device
         self.optimizer: torch.optim.Optimizer  # set below
 
-        # compile
-        compile_mode = cfg.runtime.compile
-        should_compile = (compile_mode == "auto" and device.type == "cuda") or str(
-            compile_mode
-        ).lower() == "true"
-        if should_compile:
+        # compile — [shared] 委托给 core 统一判定
+        if should_compile(cfg.runtime.compile, device):
             self.model = torch.compile(self.model)
 
         # optimizer

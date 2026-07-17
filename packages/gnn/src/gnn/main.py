@@ -7,9 +7,9 @@ from gnn.utils.paths import resolve_config
 from gnn.config.schema import TaskType
 from gnn.datasets import load_planetoid
 from gnn.datasets.splitter import split_link_prediction_data
-from gnn.experiments import ExperimentManager
 from gnn.models.builder import build_model
 from gnn.trainer.factory import create_trainer
+from core.experiment import ExperimentManager, PlotSpec
 from core.utils import get_device, seed_everything, setup_logging
 
 import torch
@@ -34,13 +34,19 @@ def main() -> None:
     # 输入特征归一化（Row-wise L2，GNN 标准预处理）
     data.x = F.normalize(cast(Tensor, data.x), p=2, dim=1)
 
-    # 实验目录
-    exp = ExperimentManager(cfg)
-    multi_seed = len(cfg.experiment.seeds) > 1
+    # 实验目录 — [shared] 使用 core 统一 ExperimentManager
+    exp = ExperimentManager(
+        save_dir=cfg.experiment.save_dir,
+        name_prefix=cfg.experiment.name_prefix,
+        dir_segments=[cfg.dataset.name, cfg.model.name],
+        seeds=cfg.experiment.seeds,
+    )
+    multi_seed = exp.is_multi
     if multi_seed:
         exp.setup_multi()
     else:
         exp.setup()
+    exp.save_config(cfg.to_dict())
     setup_logging(exp.log_dir)
 
     # 设备
@@ -56,6 +62,25 @@ def main() -> None:
     y: Tensor = cast(Tensor, data.y)
     edge_index: Tensor = cast(Tensor, data.edge_index)
     num_classes = int(y.max().item()) + 1
+
+    # 绘图规格 — [shared] PlotSpec 声明式替代硬编码分支
+    plot_specs = [
+        PlotSpec(
+            title="Loss", train_key="loss", val_key="val_loss", ylabel="Loss"
+        ),
+    ]
+    if cfg.task == TaskType.NODE_CLASSIFICATION:
+        plot_specs.append(
+            PlotSpec(
+                title="Accuracy", train_key="acc", val_key="val_acc", ylabel="Accuracy"
+            )
+        )
+    else:
+        plot_specs.append(
+            PlotSpec(
+                title="AUC", train_key="auc", val_key="val_auc", ylabel="AUC"
+            )
+        )
 
     results: dict[int, dict[str, Any]] = {}
     for seed in cfg.experiment.seeds:
@@ -75,7 +100,7 @@ def main() -> None:
         # 保存产物 —— 多 seed 时各 seed 独立保存
         if multi_seed:
             exp.save_history(history, run_dir=run_dir)
-            exp.plot_metrics(history, run_dir=run_dir)
+            exp.plot_metrics(history, specs=plot_specs, run_dir=run_dir)
         else:
             exp.save_history(history)
 
@@ -104,7 +129,7 @@ def main() -> None:
                 )
                 metrics = {f"best_{monitor}": best_value}
         exp.save_metrics(metrics)
-        exp.plot_metrics(history)
+        exp.plot_metrics(history, specs=plot_specs)
     logger.info("原始命令: %s", sys.argv)
     logger.info("实验完成: %s", exp.root_dir)
 

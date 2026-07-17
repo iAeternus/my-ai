@@ -9,7 +9,7 @@ import torch
 from kge.config.schema import Config
 from kge.datasets.data_module import KGDataModule, KGBatch
 from kge.models.builder import KGEModel
-from core.trainer import OPTIMIZER_REGISTRY
+from core.trainer import OPTIMIZER_REGISTRY, should_compile
 from core.utils import (
     EarlyStopping,
     MONITOR_MODES,
@@ -38,12 +38,8 @@ class BaseTrainer(ABC):
         self.data_module = data_module
         self.device = device
 
-        # compile
-        compile_mode = cfg.runtime.compile
-        should_compile = (compile_mode == "auto" and device.type == "cuda") or str(
-            compile_mode
-        ).lower() == "true"
-        if should_compile:
+        # compile — [shared] 委托给 core 统一判定
+        if should_compile(cfg.runtime.compile, device):
             self.model = torch.compile(self.model)  # type: ignore[assignment]
 
         # optimizer

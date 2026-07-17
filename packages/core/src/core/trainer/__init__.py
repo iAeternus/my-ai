@@ -37,6 +37,27 @@ logger = logging.getLogger(__name__)
 TBatch = TypeVar("TBatch")
 
 
+# ── 工具函数 ───────────────────────────────────────────────────────────
+
+
+def should_compile(compile_mode: str | bool, device: torch.device) -> bool:
+    """判断是否启用 ``torch.compile``。
+
+    GNN/KGE 的 trainer 初始化中原来各有一份相同的 3 行内联逻辑，
+    统一提取到此函数。
+
+    Args:
+        compile_mode: 配置中的 compile 字段（``"auto"`` / ``True`` / ``False``）。
+        device: 当前使用的 torch 设备。
+
+    Returns:
+        ``True`` 表示应启用 compile。
+    """
+    if compile_mode == "auto":
+        return device.type == "cuda"
+    return str(compile_mode).lower() == "true"
+
+
 class Callback(ABC):
     """训练生命周期钩子
 

@@ -1,0 +1,52 @@
+{
+  "task": "link_prediction",
+  "dataset": {
+    "name": "fb15k-237",
+    "root": "F:\\Develop\\python\\my-ai\\packages\\kge\\data",
+    "batch_size": 1024,
+    "num_negative_samples": 128,
+    "num_workers": 0
+  },
+  "model": {
+    "encoder_name": "trans-e",
+    "head_name": "link_prediction",
+    "params": {}
+  },
+  "optimizer": {
+    "name": "adam",
+    "params": {}
+  },
+  "train": {
+    "epochs": 5,
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "loss_type": "margin_ranking",
+    "margin": 1.0,
+    "adversarial_temperature": 0.0,
+    "label_smoothing": 0.0,
+    "regularization_weight": 0.0,
+    "eval_interval": 10,
+    "eval_ks": [
+      1,
+      3,
+      10
+    ],
+    "early_stopping": {
+      "enabled": true,
+      "patience": 30,
+      "monitor": "val_mrr",
+      "min_delta": 0.0
+    }
+  },
+  "runtime": {
+    "device": "auto",
+    "compile": "auto"
+  },
+  "experiment": {
+    "name_prefix": "experiment",
+    "save_dir": "F:\\Develop\\python\\my-ai\\packages\\kge",
+    "seeds": [
+      42
+    ]
+  }
+}

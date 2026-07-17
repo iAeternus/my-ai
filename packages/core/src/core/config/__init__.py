@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, TypeVar
+import json
 
 import yaml
 
@@ -43,6 +44,60 @@ class BaseEarlyStoppingConfig:
     patience: int = 30
     monitor: str = "val_loss"
     min_delta: float = 0.0
+
+
+@dataclass(slots=True, frozen=True)
+class BaseOptimizerConfig:
+    """优化器配置基类（name + params 模式）。"""
+
+    name: str = "adam"
+    params: dict[str, object] = field(default_factory=dict)
+
+
+# ── 配置序列化 mixin ───────────────────────────────────────────────────
+
+
+class SerializableConfig:
+    """配置序列化 mixin，提供 ``to_dict`` / ``to_json`` 默认实现。
+
+    各包的 ``Config`` 类继承此类即可自动获得序列化能力。
+    """
+
+    def to_dict(self) -> dict[str, Any]:
+        """转为普通字典（委托 ``dataclasses.asdict``）。"""
+        return asdict(self)
+
+    def to_json(self, path: str | Path, *, indent: int = 2) -> None:
+        """保存配置为 JSON 文件。
+
+        Args:
+            path: 输出文件路径。
+            indent: JSON 缩进空格数。
+        """
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
+
+
+# ── 校验工具 ───────────────────────────────────────────────────────────
+
+
+def validate_monitor(monitor: str, *, monitor_modes: dict[str, str]) -> None:
+    """校验 early_stopping.monitor 是否在已知模式中。
+
+    Args:
+        monitor: 监控指标名（如 ``"val_loss"``）。
+        monitor_modes: 已知监控模式字典（通常为 ``core.utils.MONITOR_MODES``）。
+
+    Raises:
+        ValueError: 当 monitor 不在 monitor_modes 中时。
+    """
+    if monitor not in monitor_modes:
+        raise ValueError(
+            f"不支持的 early_stopping.monitor: {monitor!r}，"
+            f"可选: {list(monitor_modes.keys())}"
+        )
 
 
 # ── 纯函数：配置加载 ─────────────────────────────────────────────────

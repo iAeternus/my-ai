@@ -152,6 +152,21 @@ class ExperimentManager:
         _mkdir(path / "plots")
         return path
 
+    @property
+    def log_dir(self) -> Path:
+        """实验日志目录：``<root>/logs/``"""
+        return self.root_dir / "logs"
+
+    @property
+    def plot_dir(self) -> Path:
+        """实验绘图目录：``<root>/plots/``"""
+        return self.root_dir / "plots"
+
+    @property
+    def checkpoint_dir(self) -> Path:
+        """实验 checkpoint 目录：``<root>/checkpoints/``"""
+        return self.root_dir / "checkpoints"
+
     def _build_root(self, suffix: str = "") -> Path:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         name = f"{self.name_prefix}_{timestamp}{suffix}"

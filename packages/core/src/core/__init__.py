@@ -1,12 +1,15 @@
 from core.config import (
     BaseEarlyStoppingConfig,
     BaseExperimentConfig,
+    BaseOptimizerConfig,
     BaseRuntimeConfig,
+    SerializableConfig,
     apply_overrides,
     load_config_from_cli,
     load_config_from_dict,
     load_config_from_yaml,
     set_nested,
+    validate_monitor,
 )
 from core.datasets import (
     DATASET_REGISTRY,
@@ -35,6 +38,7 @@ from core.trainer import (
     Callback,
     CheckpointCallback,
     EarlyStoppingCallback,
+    should_compile,
 )
 from core.utils import (
     CheckpointManager,
@@ -56,6 +60,7 @@ __all__ = [
     "BaseDataset",
     "BaseEarlyStoppingConfig",
     "BaseExperimentConfig",
+    "BaseOptimizerConfig",
     "BaseRuntimeConfig",
     "BaseTrainer",
     "Callback",
@@ -77,6 +82,7 @@ __all__ = [
     "PlotSpec",
     "PROJECT_ROOT",
     "Registry",
+    "SerializableConfig",
     "TRANSFORM_REGISTRY",
     "TripletDataset",
     "apply_overrides",
@@ -97,5 +103,7 @@ __all__ = [
     "seed_everything",
     "set_nested",
     "setup_logging",
+    "should_compile",
     "stratified_split_indices",
+    "validate_monitor",
 ]

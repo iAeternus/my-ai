@@ -1,9 +1,15 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
-import json
-from pathlib import Path
 from typing import Any
-from core.config import BaseRuntimeConfig
+
+from core.config import (
+    BaseEarlyStoppingConfig,
+    BaseExperimentConfig,
+    BaseOptimizerConfig,
+    BaseRuntimeConfig,
+    SerializableConfig,
+    validate_monitor,
+)
 from core.utils import MONITOR_MODES
 
 
@@ -42,21 +48,11 @@ class ModelConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class OptimizerConfig:
-    """优化器配置
+class OptimizerConfig(BaseOptimizerConfig):
+    """GNN 优化器配置。继承 core 的 ``name`` + ``params`` 默认值。
 
-    Attributes:
-        name:
-            优化器名称 (adam、adamw、sgd)
-
-        params:
-            - lr (float): 学习率
-            - weight_decay (float): 权重衰减
-            - momentum (float): SGD 动量
+    params 常用键: lr, weight_decay, momentum
     """
-
-    name: str = "adam"
-    params: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, frozen=True)
@@ -85,23 +81,11 @@ class SchedulerConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class EarlyStoppingConfig:
-    """早停配置
+class EarlyStoppingConfig(BaseEarlyStoppingConfig):
+    """GNN 早停配置。继承 core 的 ``enabled`` / ``patience`` / ``monitor`` / ``min_delta``。
 
-    Attributes:
-        enabled:
-            是否启用早停
-
-        patience:
-            连续无改善的容忍轮数
-
-        monitor:
-            监控指标 (val_loss、val_acc、val_auc、val_ap)
+    monitor 可选: val_loss、val_acc、val_auc、val_ap
     """
-
-    enabled: bool = True
-    patience: int = 30
-    monitor: str = "val_loss"
 
 
 @dataclass(slots=True, frozen=True)
@@ -116,14 +100,17 @@ class RuntimeConfig(BaseRuntimeConfig):
 
 
 @dataclass(slots=True, frozen=True)
-class ExperimentConfig:
-    name_prefix: str = "default"
-    save_dir: str = "outputs"  # 相对于 PACKAGE_ROOT，由 from_dict() 做绝对路径解析
-    seeds: list[int] = field(default_factory=lambda: [42])
+class ExperimentConfig(BaseExperimentConfig):
+    """GNN 实验配置。继承 core 的 ``name_prefix`` / ``save_dir`` / ``seeds``。
+
+    包特定默认值（如 ``name_prefix="default"``）在 ``from_dict()`` 中处理。
+    """
 
 
 @dataclass(slots=True, frozen=True)
-class Config:
+class Config(SerializableConfig):
+    """GNN 根配置。继承 ``SerializableConfig`` 获得 ``to_dict()`` / ``to_json()``。"""
+
     task: TaskType = TaskType.NODE_CLASSIFICATION
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
@@ -136,31 +123,6 @@ class Config:
     def __post_init__(self) -> None:
         self._validate()
 
-    def to_dict(self) -> dict[str, Any]:
-        """转换为普通字典"""
-        return asdict(self)
-
-    def to_json(
-        self,
-        path: str | Path,
-        *,
-        indent: int = 2,
-    ) -> None:
-        """保存配置为 JSON 文件
-
-        Args:
-            path:
-                输出文件路径
-
-            indent:
-                JSON 缩进
-        """
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
-
     def _validate(self) -> None:
         PLANETOID_NAMES = {"cora", "citeseer", "pubmed"}
         if self.dataset.name not in PLANETOID_NAMES:
@@ -168,13 +130,11 @@ class Config:
 
         if self.task not in (TaskType.NODE_CLASSIFICATION, TaskType.LINK_PREDICTION):
             raise ValueError(
-                f"Planetoid 数据集 '{cfg.dataset.name}' 不支持任务 '{cfg.task.value}'。"
+                f"Planetoid 数据集 '{self.dataset.name}' 不支持任务 '{self.task.value}'。"
                 f"仅支持: node_classification, link_prediction"
             )
 
-        if self.train.early_stopping.monitor not in MONITOR_MODES.keys():
-            raise ValueError(
-                "Unsupported early_stopping.monitor: "
-                f"{cfg.train.early_stopping.monitor!r}. "
-                f"Available: {', '.join(MONITOR_MODES.keys())}"
-            )
+        # [shared] 委托给 core 统一校验
+        validate_monitor(
+            self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
+        )

@@ -1,10 +1,15 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
-import json
-from pathlib import Path
 from typing import Any
 
-from core.config import BaseRuntimeConfig
+from core.config import (
+    BaseEarlyStoppingConfig,
+    BaseExperimentConfig,
+    BaseOptimizerConfig,
+    BaseRuntimeConfig,
+    SerializableConfig,
+    validate_monitor,
+)
 from kge.utils.paths import DATA_DIR, OUTPUT_DIR
 
 
@@ -67,16 +72,18 @@ class ModelConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class OptimizerConfig:
-    """优化器配置"""
-
-    name: str = "adam"
-    params: dict[str, object] = field(default_factory=dict)
+class OptimizerConfig(BaseOptimizerConfig):
+    """KGE 优化器配置。继承 core 的 ``name`` + ``params`` 默认值。"""
 
 
 @dataclass(slots=True, frozen=True)
 class EarlyStoppingConfig:
-    """早停配置"""
+    """KGE 早停配置。
+
+    .. note:: 未继承 ``BaseEarlyStoppingConfig``，因为 KGE 默认
+       ``monitor="val_mrr"`` 与 core 的 ``"val_loss"`` 不同，
+       而 ``slots=True`` + ``frozen=True`` 下不能重声明字段默认值。
+    """
 
     enabled: bool = True
     patience: int = 30
@@ -107,17 +114,16 @@ class RuntimeConfig(BaseRuntimeConfig):
 
 
 @dataclass(slots=True, frozen=True)
-class ExperimentConfig:
-    """实验配置"""
+class ExperimentConfig(BaseExperimentConfig):
+    """KGE 实验配置。继承 core 的 ``name_prefix`` / ``save_dir`` / ``seeds``。
 
-    name_prefix: str = "kge"
-    save_dir: str = str(OUTPUT_DIR)
-    seeds: list[int] = field(default_factory=lambda: [42])
+    包特定默认值（如 ``name_prefix="kge"``）在 ``from_dict()`` 中处理。
+    """
 
 
 @dataclass(slots=True, frozen=True)
-class Config:
-    """根配置"""
+class Config(SerializableConfig):
+    """KGE 根配置。继承 ``SerializableConfig`` 获得 ``to_dict()`` / ``to_json()``。"""
 
     task: TaskType = TaskType.LINK_PREDICTION
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
@@ -134,18 +140,7 @@ class Config:
         """校验配置合法性"""
         from core.utils import MONITOR_MODES
 
-        monitor = self.train.early_stopping.monitor
-        if monitor not in MONITOR_MODES:
-            raise ValueError(
-                f"不支持的 early_stopping.monitor: {monitor!r}，"
-                f"可选: {list(MONITOR_MODES.keys())}"
-            )
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    def to_json(self, path: str | Path, *, indent: int = 2) -> None:
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
+        # [shared] 委托给 core 统一校验
+        validate_monitor(
+            self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
+        )
