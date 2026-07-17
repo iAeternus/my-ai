@@ -1,15 +1,16 @@
 import sys
 import logging
-from typing import cast
+from typing import Any, cast
 
 from gnn.config import from_cli, parse_args
+from gnn.utils.paths import resolve_config
 from gnn.config.schema import TaskType
 from gnn.datasets import load_planetoid
 from gnn.datasets.splitter import split_link_prediction_data
 from gnn.experiments import ExperimentManager
 from gnn.models.builder import build_model
 from gnn.trainer.factory import create_trainer
-from core.utils import get_device, setup_logging
+from core.utils import get_device, seed_everything, setup_logging
 
 import torch
 import torch.nn.functional as F
@@ -19,10 +20,13 @@ from torch_geometric.data import Data
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     # 配置
     args = parse_args()
-    cfg = from_cli(args.config, overrides=vars(args))
+    config_path: str | None = (
+        str(resolve_config(args.config)) if args.config else None
+    )
+    cfg = from_cli(config_path, overrides=vars(args))
 
     # 加载数据
     data = load_planetoid(cfg.dataset.name, cfg.dataset.root)
@@ -53,11 +57,9 @@ def main():
     edge_index: Tensor = cast(Tensor, data.edge_index)
     num_classes = int(y.max().item()) + 1
 
-    results: dict[int, dict] = {}
+    results: dict[int, dict[str, Any]] = {}
     for seed in cfg.experiment.seeds:
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed(seed)
+        seed_everything(seed)
 
         run_dir = exp.seed_run_dir(seed) if multi_seed else exp.root_dir
 

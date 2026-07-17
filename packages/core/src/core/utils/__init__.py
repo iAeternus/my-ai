@@ -11,7 +11,14 @@ from core.utils.registry import (
 )
 from core.utils.seed import seed_everything
 from core.utils.typing import dict_get_or_default, dict_pop_or_default
-from core.utils.paths import DATA_DIR, OUTPUT_DIR, PROJECT_ROOT, resolve_path
+from core.utils.paths import (
+    DATA_DIR,
+    OUTPUT_DIR,
+    PROJECT_ROOT,
+    PackagePaths,
+    get_package_root,
+    resolve_path,
+)
 
 __all__ = [
     "CheckpointManager",
@@ -30,5 +37,7 @@ __all__ = [
     "DATA_DIR",
     "OUTPUT_DIR",
     "PROJECT_ROOT",
+    "PackagePaths",
+    "get_package_root",
     "resolve_path",
 ]

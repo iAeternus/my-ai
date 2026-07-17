@@ -1,8 +1,16 @@
-from dataclasses import asdict
+"""GNN 配置加载器。
+
+委托给 ``core.config`` 的通用加载函数（``load_config_from_yaml``、
+``load_config_from_cli``、``apply_overrides``、``set_nested``），
+仅保留 GNN 特有的 ``from_dict`` 工厂函数和 ``_OVERRIDE_MAP`` 映射。
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
-from core.utils import MONITOR_MODES
-import yaml
+
+from core.config import load_config_from_cli, load_config_from_yaml
 
 from gnn.config.schema import (
     Config,
@@ -16,27 +24,61 @@ from gnn.config.schema import (
     TaskType,
     TrainConfig,
 )
+from gnn.utils.paths import DATA_DIR, OUTPUT_DIR, resolve_config, resolve_path
+
+# ── CLI 参数名 → 嵌套字典路径映射（GNN 特有）─────────────────────────
+
+_OVERRIDE_MAP: dict[str, list[str]] = {
+    "task": ["task"],
+    "dataset": ["dataset", "name"],
+    "root": ["dataset", "root"],
+    "model": ["model", "name"],
+    "hidden_dim": ["model", "params", "hidden_dim"],
+    "dropout": ["model", "params", "dropout"],
+    "num_layers": ["model", "params", "num_layers"],
+    "lr": ["optimizer", "params", "lr"],
+    "weight_decay": ["optimizer", "params", "weight_decay"],
+    "epochs": ["train", "epochs"],
+    "patience": ["train", "early_stopping", "patience"],
+    "device": ["runtime", "device"],
+    "compile": ["runtime", "compile"],
+    "seeds": ["experiment", "seeds"],
+}
+
+
+# ── 配置加载（委托给 core）────────────────────────────────────────────
 
 
 def from_yaml(path: str | Path) -> Config:
-    """从yaml加载配置"""
-    with open(path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-        return from_dict(data)
+    """从 YAML 加载配置（路径解析后委托给 core）。"""
+    path = resolve_config(path)
+    return load_config_from_yaml(path, factory=from_dict)
 
 
 def from_dict(data: dict[str, Any]) -> Config:
-    """从dict加载配置"""
+    """从字典构建 Config（GNN 特有工厂函数）。
+
+    对 ``dataset.root`` 和 ``experiment.save_dir`` 做绝对路径解析。
+    """
     task_raw = data.get("task", "node_classification")
     task = TaskType(task_raw)
 
-    dataset_data = data.get("dataset", {})
-    model_data = data.get("model", {})
-    optimizer_data = data.get("optimizer", {})
-    scheduler_data = data.get("scheduler", {})
-    train_data = data.get("train", {})
-    runtime_data = data.get("runtime", {})
-    experiment_data = data.get("experiment", {})
+    dataset_data: dict[str, Any] = dict(data.get("dataset", {}))
+    model_data: dict[str, Any] = dict(data.get("model", {}))
+    optimizer_data: dict[str, Any] = dict(data.get("optimizer", {}))
+    scheduler_data: dict[str, Any] = dict(data.get("scheduler", {}))
+    train_data: dict[str, Any] = dict(data.get("train", {}))
+    runtime_data: dict[str, Any] = dict(data.get("runtime", {}))
+    experiment_data: dict[str, Any] = dict(data.get("experiment", {}))
+
+    # 路径解析：确保 root / save_dir 为绝对路径
+    if "root" not in dataset_data:
+        dataset_data["root"] = str(DATA_DIR)
+    dataset_data["root"] = str(resolve_path(dataset_data["root"]))
+
+    if "save_dir" not in experiment_data:
+        experiment_data["save_dir"] = str(OUTPUT_DIR)
+    experiment_data["save_dir"] = str(resolve_path(experiment_data["save_dir"]))
 
     return Config(
         task=task,
@@ -50,70 +92,34 @@ def from_dict(data: dict[str, Any]) -> Config:
     )
 
 
+def from_cli(
+    yaml_path: str | Path | None,
+    *,
+    overrides: dict[str, Any],
+) -> Config:
+    """分层加载配置：默认值 → YAML → CLI 覆盖（委托给 core）。
+
+    优先级: Default > Yaml > CLI
+    """
+    if yaml_path is not None:
+        yaml_path = str(resolve_config(yaml_path))
+    return load_config_from_cli(
+        yaml_path,
+        overrides,
+        factory=from_dict,
+        override_map=_OVERRIDE_MAP,
+        defaults=Config(),
+    )
+
+
+# ── 内部辅助 ──────────────────────────────────────────────────────────
+
+
 def _parse_train(data: dict[str, Any]) -> dict[str, Any]:
     data = dict(data)
     early_stopping = data.pop("early_stopping", {})
     return {**data, "early_stopping": EarlyStoppingConfig(**early_stopping)}
 
 
-def from_cli(
-    yaml_path: str | Path | None,
-    *,
-    overrides: dict[str, Any],
-) -> Config:
-    """从CLI加载配置
-
-    优先级: Default > Yaml > CLI
-    """
-    config = Config()
-    if yaml_path:
-        config = from_yaml(yaml_path)
-
-    raw = asdict(config)
-    apply_cli_overrides(raw, overrides)
-    return from_dict(raw)
-
-
-def apply_cli_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> None:
-    """CLI 参数覆盖 YAML 配置（原地修改 raw dict）
-
-    仅覆盖非 None 的项
-    """
-
-    # 将 CLI 参数名映射为嵌套字典路径（逐层 key 列表）
-    _OVERRIDE_MAP: dict[str, list[str]] = {
-        "task": ["task"],
-        "dataset": ["dataset", "name"],
-        "root": ["dataset", "root"],
-        "model": ["model", "name"],
-        "hidden_dim": ["model", "params", "hidden_dim"],
-        "dropout": ["model", "params", "dropout"],
-        "num_layers": ["model", "params", "num_layers"],
-        "lr": ["optimizer", "params", "lr"],
-        "weight_decay": ["optimizer", "params", "weight_decay"],
-        "epochs": ["train", "epochs"],
-        "patience": ["train", "early_stopping", "patience"],
-        "device": ["runtime", "device"],
-        "compile": ["runtime", "compile"],
-        "seeds": ["experiment", "seeds"],
-    }
-
-    for cli_key, value in overrides.items():
-        if value is None:
-            continue
-        path = _OVERRIDE_MAP.get(cli_key)
-        if path is None:
-            continue
-        _set_nested(config, path, value)
-
-
-def _set_nested(d: dict, keys: list[str], value: Any) -> None:
-    """按 key 路径设置嵌套字典值，中间层不存在则自动创建。
-
-    Example:
-        _set_nested(d, ["model", "params", "hidden_dim"], 128)
-        # => d["model"]["params"]["hidden_dim"] = 128
-    """
-    for key in keys[:-1]:
-        d = d.setdefault(key, {})
-    d[keys[-1]] = value
+# [已删除] apply_cli_overrides() —— 由 core.apply_overrides 替代
+# [已删除] _set_nested()          —— 由 core.set_nested 替代

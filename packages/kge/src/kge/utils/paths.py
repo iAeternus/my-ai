@@ -1,30 +1,30 @@
-"""路径解析基础设施。
+"""路径解析基础设施（委托给 core.utils.paths）。
 
-通过 ``__file__`` 向上查找 ``pyproject.toml`` 定位项目根目录，
-提供不依赖 CWD 的绝对路径常量和路径解析工具。
+通过 core 的 ``get_package_root()`` 定位 KGE 包根目录，
+``PROJECT_ROOT`` 从 core 透传（monorepo 根）。
 """
 
 from __future__ import annotations
+
 from pathlib import Path
 
+from core.utils.paths import PROJECT_ROOT, PackagePaths, get_package_root
 
-def _find_project_root() -> Path:
-    """从当前文件向上查找 ``pyproject.toml``，返回项目根目录。"""
-    current = Path(__file__).resolve().parent
-    for ancestor in [current, *current.parents]:
-        if (ancestor / "pyproject.toml").is_file():
-            return ancestor
-    raise RuntimeError("找不到项目根目录（未找到 pyproject.toml）")
+# ── KGE 包级路径 ───────────────────────────────────────────────────────
+
+_pkg = PackagePaths(get_package_root(__file__))
+
+PACKAGE_ROOT: Path = _pkg.root
+"""KGE 包根目录（绝对路径）—— ``packages/kge/``"""
+
+DATA_DIR: Path = _pkg.data_dir
+"""KGE 数据集根目录：``<PACKAGE_ROOT>/data/``"""
+
+OUTPUT_DIR: Path = _pkg.output_dir
+"""KGE 实验输出根目录：``<PACKAGE_ROOT>/outputs/``"""
 
 
-PROJECT_ROOT = _find_project_root()
-"""项目根目录（绝对路径）—— ``pyproject.toml`` 所在目录。"""
-
-DATA_DIR = PROJECT_ROOT / "data"
-"""数据集根目录（绝对路径）。"""
-
-OUTPUT_DIR = PROJECT_ROOT / "outputs"
-"""实验输出根目录（绝对路径）。"""
+# ── 路径解析（向后兼容）─────────────────────────────────────────────────
 
 
 def resolve_path(path: str | Path) -> Path:
@@ -32,13 +32,14 @@ def resolve_path(path: str | Path) -> Path:
 
     规则：
     - 绝对路径 → 原样返回。
-    - ``"packages/kge/..."`` → 剥离旧 monorepo 前缀，相对于 ``PROJECT_ROOT`` 解析。
-    - 其他相对路径 → 相对于 ``PROJECT_ROOT`` 解析。
+    - ``"packages/kge/..."`` → 剥离旧 monorepo 前缀，相对于 ``PACKAGE_ROOT`` 解析。
+    - 其他相对路径 → 相对于 ``PACKAGE_ROOT`` 解析。
     """
     p = Path(path)
     if p.is_absolute():
         return p
 
+    # [legacy] 兼容旧 monorepo 前缀
     s = str(p).replace("\\", "/")
     legacy_prefix = "packages/kge/"
     if s.startswith(legacy_prefix):
@@ -46,4 +47,4 @@ def resolve_path(path: str | Path) -> Path:
     elif s == "packages/kge":
         p = Path(".")
 
-    return (PROJECT_ROOT / p).resolve()
+    return _pkg.resolve(p)

@@ -10,7 +10,7 @@ from torch_geometric.data import Data
 
 from gnn.config import Config
 from core.trainer import OPTIMIZER_REGISTRY
-from core.utils import EarlyStopping, dict_pop_or_default
+from core.utils import CheckpointManager, EarlyStopping, dict_pop_or_default
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class BaseTrainer(ABC):
         self.cfg = cfg
         self.model = model
         self.device = device
+        self.optimizer: torch.optim.Optimizer  # set below
 
         # compile
         compile_mode = cfg.runtime.compile
@@ -58,7 +59,7 @@ class BaseTrainer(ABC):
             )
 
         # scheduler
-        self.scheduler = None
+        self.scheduler: torch.optim.lr_scheduler.LRScheduler | None = None
         if cfg.scheduler.enabled and cfg.scheduler.name:
             sched_params: dict[str, Any] = dict(cfg.scheduler.params)
             if cfg.scheduler.name == "reduce_on_plateau":
@@ -68,7 +69,7 @@ class BaseTrainer(ABC):
                 )
 
         self._best_score: float | None = None
-        self._checkpoint_path: Path | None = None
+        self._checkpoint_mgr: CheckpointManager | None = None
 
     @abstractmethod
     def _train_step(self, data: Data) -> tuple[float, dict[str, float]]:
@@ -105,8 +106,7 @@ class BaseTrainer(ABC):
             patience=self.cfg.train.early_stopping.patience,
             mode=self._monitor_mode,
         )
-        self._checkpoint_path = checkpoint_dir / "best.pt"
-        self._checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        self._checkpoint_mgr = CheckpointManager(checkpoint_dir)
 
         for epoch in range(self.cfg.train.epochs):
             # 训练
@@ -139,8 +139,11 @@ class BaseTrainer(ABC):
             # 保存与早停
             monitor_val = val_metrics.get(self._monitor_metric, val_loss)
             should_stop = early_stop.step(monitor_val)
-            if early_stop.improved:
-                torch.save(self.model.state_dict(), self._checkpoint_path)
+            if early_stop.improved and self._checkpoint_mgr is not None:
+                self._checkpoint_mgr.save(
+                    self.model, self.optimizer, epoch, monitor_val,
+                    mode=self._monitor_mode,
+                )
             if should_stop:
                 logger.info("早停触发于 epoch %d", epoch)
                 break
@@ -154,13 +157,8 @@ class BaseTrainer(ABC):
         return history
 
     def _load_best(self) -> None:
-        if self._checkpoint_path and self._checkpoint_path.exists():
-            state = torch.load(
-                self._checkpoint_path,
-                map_location=self.device,
-                weights_only=True,
-            )
-            self.model.load_state_dict(state)
+        if self._checkpoint_mgr is not None:
+            self._checkpoint_mgr.load(self.model)
 
 
 

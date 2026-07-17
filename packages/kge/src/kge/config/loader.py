@@ -1,8 +1,17 @@
-from dataclasses import asdict
+"""KGE 配置加载器。
+
+委托给 ``core.config`` 的通用加载函数（``load_config_from_yaml``、
+``load_config_from_cli``、``apply_overrides``、``set_nested``），
+仅保留 KGE 特有的 ``from_dict`` 工厂函数和 ``_OVERRIDE_MAP`` 映射。
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
-from kge.utils.paths import DATA_DIR, OUTPUT_DIR, PROJECT_ROOT, resolve_path
+from core.config import load_config_from_cli, load_config_from_yaml
+
 from kge.config.schema import (
     Config,
     DatasetConfig,
@@ -15,31 +24,73 @@ from kge.config.schema import (
     TaskType,
     TrainConfig,
 )
-import yaml
+from kge.utils.paths import DATA_DIR, OUTPUT_DIR, PACKAGE_ROOT, resolve_path
+
+# ── CLI 参数名 → 嵌套字典路径映射（KGE 特有）─────────────────────────
+
+_OVERRIDE_MAP: dict[str, list[str]] = {
+    "task": ["task"],
+    "dataset": ["dataset", "name"],
+    "root": ["dataset", "root"],
+    "encoder": ["model", "encoder_name"],
+    "head": ["model", "head_name"],
+    "batch_size": ["dataset", "batch_size"],
+    "negative_samples": ["dataset", "num_negative_samples"],
+    "embedding_dim": ["model", "params", "embedding_dim"],
+    "gamma": ["model", "params", "gamma"],
+    "p_norm": ["model", "params", "p_norm"],
+    "hidden_dim": ["model", "params", "hidden_dim"],
+    "hidden_dropout": ["model", "params", "hidden_dropout"],
+    "relation_dim": ["model", "params", "relation_dim"],
+    "epsilon": ["model", "params", "epsilon"],
+    "kernel_size": ["model", "params", "kernel_size"],
+    "conv_out_channels": ["model", "params", "conv_out_channels"],
+    "input_dropout": ["model", "params", "input_dropout"],
+    "feature_dropout": ["model", "params", "feature_dropout"],
+    "lr": ["optimizer", "params", "lr"],
+    "weight_decay": ["optimizer", "params", "weight_decay"],
+    "epochs": ["train", "epochs"],
+    "loss_type": ["train", "loss_type"],
+    "margin": ["train", "margin"],
+    "label_smoothing": ["train", "label_smoothing"],
+    "eval_interval": ["train", "eval_interval"],
+    "patience": ["train", "early_stopping", "patience"],
+    "device": ["runtime", "device"],
+    "compile": ["runtime", "compile"],
+    "seeds": ["experiment", "seeds"],
+    "name_prefix": ["experiment", "name_prefix"],
+    "save_dir": ["experiment", "save_dir"],
+}
+
+
+# ── 配置加载（委托给 core）────────────────────────────────────────────
 
 
 def from_yaml(path: str | Path) -> Config:
-    """从 YAML 配置文件构建 Config"""
+    """从 YAML 配置文件构建 Config（委托给 core）。"""
     path = Path(path)
+    if not path.is_absolute():
+        path = PACKAGE_ROOT / path
     if not path.exists():
         raise FileNotFoundError(f"配置文件不存在: {path}")
-    with path.open("r", encoding="utf-8") as fp:
-        data = yaml.safe_load(fp) or {}
-    return from_dict(data)
+    return load_config_from_yaml(path, factory=from_dict)
 
 
 def from_dict(data: dict[str, Any]) -> Config:
-    """从字典构建 Config，缺失字段使用 dataclass 默认值"""
-    ds = data.get("dataset", {})
-    m = data.get("model", {})
-    opt = data.get("optimizer", {})
-    t = data.get("train", {})
-    es = t.get("early_stopping", {})
-    r = data.get("runtime", {})
-    e = data.get("experiment", {})
+    """从字典构建 Config（KGE 特有工厂函数）。
 
-    task_raw = data.get("task", "link_prediction")
-    loss_raw = t.get("loss_type", "margin_ranking")
+    对路径字段做绝对路径解析。
+    """
+    ds: dict[str, Any] = dict(data.get("dataset", {}))
+    m: dict[str, Any] = dict(data.get("model", {}))
+    opt: dict[str, Any] = dict(data.get("optimizer", {}))
+    t: dict[str, Any] = dict(data.get("train", {}))
+    es: dict[str, Any] = dict(t.get("early_stopping", {}))
+    r: dict[str, Any] = dict(data.get("runtime", {}))
+    e: dict[str, Any] = dict(data.get("experiment", {}))
+
+    task_raw: str = data.get("task", "link_prediction")
+    loss_raw: str = t.get("loss_type", "margin_ranking")
 
     return Config(
         task=TaskType(task_raw),
@@ -93,74 +144,23 @@ def from_cli(
     yaml_path: str | Path | None,
     cli_overrides: dict[str, Any] | None = None,
 ) -> Config:
-    """配置加载，优先级：代码默认值 < YAML < CLI
+    """配置加载，优先级：代码默认值 < YAML < CLI（委托给 core）。
 
     --model 和 --dataset 可覆盖 YAML 中的模型和数据集。
     encoder 专属参数由 builder.py 提供默认值，无需在 YAML 中声明。
     """
-    config = Config()
-    if yaml_path:
+    if yaml_path is not None:
         path = Path(yaml_path)
         if not path.is_absolute():
-            path = PROJECT_ROOT / path
-        if path.exists():
-            config = from_yaml(path)
-
-    if cli_overrides:
-        raw = asdict(config)
-        _apply_overrides(raw, cli_overrides)
-        config = from_dict(raw)
-
-    return config
+            yaml_path = str(PACKAGE_ROOT / path)
+    return load_config_from_cli(
+        yaml_path,
+        cli_overrides,
+        factory=from_dict,
+        override_map=_OVERRIDE_MAP,
+        defaults=Config(),
+    )
 
 
-def _apply_overrides(raw: dict[str, Any], overrides: dict[str, Any]) -> None:
-    """CLI 参数覆盖 YAML 配置（原地修改 raw dict），仅覆盖非 None 的项"""
-    _OVERRIDE_MAP: dict[str, list[str]] = {
-        "task": ["task"],
-        "dataset": ["dataset", "name"],
-        "root": ["dataset", "root"],
-        "encoder": ["model", "encoder_name"],
-        "head": ["model", "head_name"],
-        "batch_size": ["dataset", "batch_size"],
-        "negative_samples": ["dataset", "num_negative_samples"],
-        "embedding_dim": ["model", "params", "embedding_dim"],
-        "gamma": ["model", "params", "gamma"],
-        "p_norm": ["model", "params", "p_norm"],
-        "hidden_dim": ["model", "params", "hidden_dim"],
-        "hidden_dropout": ["model", "params", "hidden_dropout"],
-        "relation_dim": ["model", "params", "relation_dim"],
-        "epsilon": ["model", "params", "epsilon"],
-        "kernel_size": ["model", "params", "kernel_size"],
-        "conv_out_channels": ["model", "params", "conv_out_channels"],
-        "input_dropout": ["model", "params", "input_dropout"],
-        "feature_dropout": ["model", "params", "feature_dropout"],
-        "lr": ["optimizer", "params", "lr"],
-        "weight_decay": ["optimizer", "params", "weight_decay"],
-        "epochs": ["train", "epochs"],
-        "loss_type": ["train", "loss_type"],
-        "margin": ["train", "margin"],
-        "label_smoothing": ["train", "label_smoothing"],
-        "eval_interval": ["train", "eval_interval"],
-        "patience": ["train", "early_stopping", "patience"],
-        "device": ["runtime", "device"],
-        "compile": ["runtime", "compile"],
-        "seeds": ["experiment", "seeds"],
-        "name_prefix": ["experiment", "name_prefix"],
-        "save_dir": ["experiment", "save_dir"],
-    }
-
-    for cli_key, value in overrides.items():
-        if value is None:
-            continue
-        path = _OVERRIDE_MAP.get(cli_key)
-        if path is None:
-            continue
-        _set_nested(raw, path, value)
-
-
-def _set_nested(d: dict, keys: list[str], value: Any) -> None:
-    """按 key 路径设置嵌套字典值，中间层不存在则自动创建"""
-    for key in keys[:-1]:
-        d = d.setdefault(key, {})
-    d[keys[-1]] = value
+# [已删除] _apply_overrides() —— 由 core.apply_overrides 替代
+# [已删除] _set_nested()       —— 由 core.set_nested 替代

@@ -1,4 +1,21 @@
-"""提供通用训练循环抽象和生命周期回调协议"""
+"""训练器基础设施（可选参考实现）。
+
+.. note::
+
+   ``BaseTrainer`` 是一个 **参考训练器**，展示标准的 Template Method 训练循环模式。
+   各子包（GNN、KGE 等）**不要求**使用它 —— 每个子包可以根据自身领域需求
+   实现自己的训练器。
+
+   复现论文时若训练管线差异较大（对抗训练、多任务学习、自定义评估逻辑等），
+   建议在子包内实现专用训练器，仅复用以下共享组件：
+
+   - ``OPTIMIZER_REGISTRY`` — 优化器注册表
+   - ``Callback`` / ``EarlyStoppingCallback`` / ``CheckpointCallback`` — 回调基类
+   - ``core.utils.EarlyStopping`` — 早停逻辑
+   - ``core.utils.CheckpointManager`` — 检查点管理
+   - ``core.utils.seed_everything`` — 随机种子
+   - ``core.utils.get_device`` — 设备检测
+"""
 
 from __future__ import annotations
 

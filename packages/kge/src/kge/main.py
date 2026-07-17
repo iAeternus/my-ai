@@ -12,7 +12,7 @@ from core.utils import (
     setup_logging,
     dict_pop_or_default,
 )
-from kge.utils.paths import PROJECT_ROOT
+from kge.utils.paths import PACKAGE_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def main(argv: list[str] | None = None) -> None:
     config_path = dict_pop_or_default(
         cli_overrides,
         "config",
-        str(PROJECT_ROOT / "config" / "link_prediction-baseline.yaml"),
+        str(PACKAGE_ROOT / "config" / "link_prediction-baseline.yaml"),
     )
 
     # 配置

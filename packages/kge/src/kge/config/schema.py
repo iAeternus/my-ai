@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from core.config import BaseRuntimeConfig
 from kge.utils.paths import DATA_DIR, OUTPUT_DIR
 
 
@@ -101,11 +102,8 @@ class TrainConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class RuntimeConfig:
-    """运行时配置"""
-
-    device: str = "auto"
-    compile: str | bool = "auto"
+class RuntimeConfig(BaseRuntimeConfig):
+    """KGE 运行时配置。继承 core 的 ``device`` + ``compile`` 默认值。"""
 
 
 @dataclass(slots=True, frozen=True)

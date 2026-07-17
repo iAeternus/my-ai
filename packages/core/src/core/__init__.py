@@ -21,7 +21,14 @@ from core.datasets import (
     stratified_split_indices,
 )
 from core.experiment import ExperimentManager, PlotSpec, configure_cjk_font
-from core.utils.paths import DATA_DIR, OUTPUT_DIR, PROJECT_ROOT, resolve_path
+from core.utils.paths import (
+    DATA_DIR,
+    OUTPUT_DIR,
+    PROJECT_ROOT,
+    PackagePaths,
+    get_package_root,
+    resolve_path,
+)
 from core.trainer import (
     OPTIMIZER_REGISTRY,
     BaseTrainer,
@@ -66,6 +73,7 @@ __all__ = [
     "MONITOR_MODES",
     "OPTIMIZER_REGISTRY",
     "OUTPUT_DIR",
+    "PackagePaths",
     "PlotSpec",
     "PROJECT_ROOT",
     "Registry",
@@ -80,6 +88,7 @@ __all__ = [
     "extract_tar",
     "extract_zip",
     "get_device",
+    "get_package_root",
     "load_config_from_cli",
     "load_config_from_dict",
     "load_config_from_yaml",

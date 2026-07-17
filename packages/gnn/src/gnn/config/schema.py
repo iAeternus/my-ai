@@ -3,6 +3,7 @@ from enum import Enum
 import json
 from pathlib import Path
 from typing import Any
+from core.config import BaseRuntimeConfig
 from core.utils import MONITOR_MODES
 
 
@@ -14,7 +15,7 @@ class TaskType(str, Enum):
 @dataclass(slots=True, frozen=True)
 class DatasetConfig:
     name: str = "cora"
-    root: str = "packages/gnn/data"
+    root: str = "data"  # 相对于 PACKAGE_ROOT，由 from_dict() 做绝对路径解析
 
 
 @dataclass(slots=True, frozen=True)
@@ -110,15 +111,14 @@ class TrainConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class RuntimeConfig:
-    device: str = "auto"
-    compile: str | bool = "auto"
+class RuntimeConfig(BaseRuntimeConfig):
+    """GNN 运行时配置。继承 core 的 ``device`` + ``compile`` 默认值。"""
 
 
 @dataclass(slots=True, frozen=True)
 class ExperimentConfig:
     name_prefix: str = "default"
-    save_dir: str = "packages/gnn/outputs"
+    save_dir: str = "outputs"  # 相对于 PACKAGE_ROOT，由 from_dict() 做绝对路径解析
     seeds: list[int] = field(default_factory=lambda: [42])
 
 
