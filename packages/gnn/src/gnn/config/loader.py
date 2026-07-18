@@ -1,9 +1,4 @@
-"""GNN 配置加载器。
-
-委托给 ``core.config`` 的通用加载函数（``load_config_from_yaml``、
-``load_config_from_cli``、``apply_overrides``、``set_nested``），
-仅保留 GNN 特有的 ``from_dict`` 工厂函数和 ``_OVERRIDE_MAP`` 映射。
-"""
+"""GNN 配置加载器"""
 
 from __future__ import annotations
 
@@ -12,21 +7,17 @@ from typing import Any
 
 from core.config import load_config_from_cli, load_config_from_yaml
 
+from core.config.schema import EarlyStoppingConfig, ExperimentConfig, RuntimeConfig
 from gnn.config.schema import (
     Config,
     DatasetConfig,
-    EarlyStoppingConfig,
-    ExperimentConfig,
     ModelConfig,
     OptimizerConfig,
-    RuntimeConfig,
     SchedulerConfig,
     TaskType,
     TrainConfig,
 )
 from gnn.utils.paths import DATA_DIR, OUTPUT_DIR, resolve_config, resolve_path
-
-# CLI arg name to nested dict path mapping (GNN-specific)
 
 _OVERRIDE_MAP: dict[str, list[str]] = {
     "task": ["task"],
@@ -46,19 +37,16 @@ _OVERRIDE_MAP: dict[str, list[str]] = {
 }
 
 
-# Config loading (delegates to core)
-
-
 def from_yaml(path: str | Path) -> Config:
-    """从 YAML 加载配置（路径解析后委托给 core）。"""
+    """从 YAML 加载配置"""
     path = resolve_config(path)
     return load_config_from_yaml(path, factory=from_dict)
 
 
 def from_dict(data: dict[str, Any]) -> Config:
-    """从字典构建 Config（GNN 特有工厂函数）。
+    """从字典构建 Config（GNN 特有工厂函数）
 
-    对 ``dataset.root`` 和 ``experiment.save_dir`` 做绝对路径解析。
+    对 ``dataset.root`` 和 ``experiment.save_dir`` 做绝对路径解析
     """
     task_raw = data.get("task", "node_classification")
     task = TaskType(task_raw)
@@ -97,7 +85,7 @@ def from_cli(
     *,
     overrides: dict[str, Any],
 ) -> Config:
-    """分层加载配置：默认值 → YAML → CLI 覆盖（委托给 core）。
+    """分层加载配置：默认值 -> YAML -> CLI 覆盖
 
     优先级: Default > Yaml > CLI
     """
@@ -112,13 +100,7 @@ def from_cli(
     )
 
 
-# Internal helpers
-
-
 def _parse_train(data: dict[str, Any]) -> dict[str, Any]:
     data = dict(data)
     early_stopping = data.pop("early_stopping", {})
     return {**data, "early_stopping": EarlyStoppingConfig(**early_stopping)}
-
-
-# 以下函数已删除，由 core.apply_overrides / core.set_nested 替代

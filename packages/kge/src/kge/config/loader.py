@@ -12,15 +12,13 @@ from typing import Any
 
 from core.config import load_config_from_cli, load_config_from_yaml
 
+from core.config.schema import OptimizerConfig, ExperimentConfig, RuntimeConfig
 from kge.config.schema import (
     Config,
     DatasetConfig,
     EarlyStoppingConfig,
-    ExperimentConfig,
     LossType,
     ModelConfig,
-    OptimizerConfig,
-    RuntimeConfig,
     TaskType,
     TrainConfig,
 )
@@ -161,5 +159,3 @@ def from_cli(
         defaults=Config(),
     )
 
-
-# 以下函数已删除，由 core.apply_overrides / core.set_nested 替代

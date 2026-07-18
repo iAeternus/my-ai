@@ -1,14 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from core.config import (
-    BaseEarlyStoppingConfig,
-    BaseExperimentConfig,
-    BaseOptimizerConfig,
-    BaseRuntimeConfig,
+    EarlyStoppingConfig,
+    ExperimentConfig,
+    OptimizerConfig,
+    RuntimeConfig,
     SerializableConfig,
-    validate_monitor,
 )
 from core.utils import MONITOR_MODES
 
@@ -48,14 +46,6 @@ class ModelConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class OptimizerConfig(BaseOptimizerConfig):
-    """GNN 优化器配置。继承 core 的 ``name`` + ``params`` 默认值。
-
-    params 常用键: lr, weight_decay, momentum
-    """
-
-
-@dataclass(slots=True, frozen=True)
 class SchedulerConfig:
     """学习率调度器配置
 
@@ -81,30 +71,9 @@ class SchedulerConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class EarlyStoppingConfig(BaseEarlyStoppingConfig):
-    """GNN 早停配置。继承 core 的 ``enabled`` / ``patience`` / ``monitor`` / ``min_delta``。
-
-    monitor 可选: val_loss、val_acc、val_auc、val_ap
-    """
-
-
-@dataclass(slots=True, frozen=True)
 class TrainConfig:
     epochs: int = 100
     early_stopping: EarlyStoppingConfig = field(default_factory=EarlyStoppingConfig)
-
-
-@dataclass(slots=True, frozen=True)
-class RuntimeConfig(BaseRuntimeConfig):
-    """GNN 运行时配置。继承 core 的 ``device`` + ``compile`` 默认值。"""
-
-
-@dataclass(slots=True, frozen=True)
-class ExperimentConfig(BaseExperimentConfig):
-    """GNN 实验配置。继承 core 的 ``name_prefix`` / ``save_dir`` / ``seeds``。
-
-    包特定默认值（如 ``name_prefix="default"``）在 ``from_dict()`` 中处理。
-    """
 
 
 @dataclass(slots=True, frozen=True)
@@ -134,7 +103,3 @@ class Config(SerializableConfig):
                 f"仅支持: node_classification, link_prediction"
             )
 
-        # 委托给 core 统一校验
-        validate_monitor(
-            self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
-        )

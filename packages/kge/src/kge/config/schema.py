@@ -1,16 +1,14 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from core.config import (
-    BaseEarlyStoppingConfig,
-    BaseExperimentConfig,
-    BaseOptimizerConfig,
-    BaseRuntimeConfig,
+    EarlyStoppingConfig,
+    ExperimentConfig,
+    OptimizerConfig,
+    RuntimeConfig,
     SerializableConfig,
-    validate_monitor,
 )
-from kge.utils.paths import DATA_DIR, OUTPUT_DIR
+from kge.utils.paths import DATA_DIR
 
 
 class TaskType(str, Enum):
@@ -72,26 +70,6 @@ class ModelConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class OptimizerConfig(BaseOptimizerConfig):
-    """KGE 优化器配置。继承 core 的 ``name`` + ``params`` 默认值。"""
-
-
-@dataclass(slots=True, frozen=True)
-class EarlyStoppingConfig:
-    """KGE 早停配置。
-
-    .. note:: 未继承 ``BaseEarlyStoppingConfig``，因为 KGE 默认
-       ``monitor="val_mrr"`` 与 core 的 ``"val_loss"`` 不同，
-       而 ``slots=True`` + ``frozen=True`` 下不能重声明字段默认值。
-    """
-
-    enabled: bool = True
-    patience: int = 30
-    monitor: str = "val_mrr"
-    min_delta: float = 0.0
-
-
-@dataclass(slots=True, frozen=True)
 class TrainConfig:
     """训练配置"""
 
@@ -109,21 +87,8 @@ class TrainConfig:
 
 
 @dataclass(slots=True, frozen=True)
-class RuntimeConfig(BaseRuntimeConfig):
-    """KGE 运行时配置。继承 core 的 ``device`` + ``compile`` 默认值。"""
-
-
-@dataclass(slots=True, frozen=True)
-class ExperimentConfig(BaseExperimentConfig):
-    """KGE 实验配置。继承 core 的 ``name_prefix`` / ``save_dir`` / ``seeds``。
-
-    包特定默认值（如 ``name_prefix="kge"``）在 ``from_dict()`` 中处理。
-    """
-
-
-@dataclass(slots=True, frozen=True)
 class Config(SerializableConfig):
-    """KGE 根配置。继承 ``SerializableConfig`` 获得 ``to_dict()`` / ``to_json()``。"""
+    """KGE 根配置。继承 ``SerializableConfig`` 获得 ``to_dict()`` / ``to_json()``"""
 
     task: TaskType = TaskType.LINK_PREDICTION
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
@@ -132,15 +97,3 @@ class Config(SerializableConfig):
     train: TrainConfig = field(default_factory=TrainConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
-
-    def __post_init__(self) -> None:
-        self._validate()
-
-    def _validate(self) -> None:
-        """校验配置合法性"""
-        from core.utils import MONITOR_MODES
-
-        # 委托给 core 统一校验
-        validate_monitor(
-            self.train.early_stopping.monitor, monitor_modes=MONITOR_MODES
-        )

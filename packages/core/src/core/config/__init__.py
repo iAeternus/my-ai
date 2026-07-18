@@ -1,220 +1,29 @@
-"""配置基础设施。
+"""配置基础设施"""
 
-提供可复用的 base dataclass 和纯函数形式的配置加载工具，
-通过 ``factory`` 回调适配任意包的具体 Config 类。
-"""
+from .schema import (
+    RuntimeConfig,
+    ExperimentConfig,
+    EarlyStoppingConfig,
+    OptimizerConfig,
+)
+from .base import SerializableConfig
+from .loader import (
+    load_config_from_yaml,
+    load_config_from_dict,
+    load_config_from_cli,
+    set_nested,
+    apply_overrides,
+)
 
-from __future__ import annotations
-
-from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
-from pathlib import Path
-from typing import Any, TypeVar
-import json
-
-import yaml
-
-T = TypeVar("T")
-
-# Base dataclasses
-
-
-@dataclass(slots=True, frozen=True)
-class BaseRuntimeConfig:
-    """运行时配置基类（device + compile）。"""
-
-    device: str = "auto"
-    compile: str | bool = "auto"
-
-
-@dataclass(slots=True, frozen=True)
-class BaseExperimentConfig:
-    """实验配置基类（名称、保存目录、随机种子）。"""
-
-    name_prefix: str = "experiment"
-    save_dir: str = ""
-    seeds: list[int] = field(default_factory=lambda: [42])
-
-
-@dataclass(slots=True, frozen=True)
-class BaseEarlyStoppingConfig:
-    """早停配置基类。"""
-
-    enabled: bool = True
-    patience: int = 30
-    monitor: str = "val_loss"
-    min_delta: float = 0.0
-
-
-@dataclass(slots=True, frozen=True)
-class BaseOptimizerConfig:
-    """优化器配置基类（name + params 模式）。"""
-
-    name: str = "adam"
-    params: dict[str, object] = field(default_factory=dict)
-
-
-# SerializableConfig mixin
-
-
-class SerializableConfig:
-    """配置序列化 mixin，提供 ``to_dict`` / ``to_json`` 默认实现。
-
-    各包的 ``Config`` 类继承此类即可自动获得序列化能力。
-    """
-
-    def to_dict(self) -> dict[str, Any]:
-        """转为普通字典（委托 ``dataclasses.asdict``）。"""
-        return asdict(self)
-
-    def to_json(self, path: str | Path, *, indent: int = 2) -> None:
-        """保存配置为 JSON 文件。
-
-        Args:
-            path: 输出文件路径。
-            indent: JSON 缩进空格数。
-        """
-        p = Path(path)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        with p.open("w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=indent, ensure_ascii=False)
-
-
-# Validation
-
-
-def validate_monitor(monitor: str, *, monitor_modes: dict[str, str]) -> None:
-    """校验 early_stopping.monitor 是否在已知模式中。
-
-    Args:
-        monitor: 监控指标名（如 ``"val_loss"``）。
-        monitor_modes: 已知监控模式字典（通常为 ``core.utils.MONITOR_MODES``）。
-
-    Raises:
-        ValueError: 当 monitor 不在 monitor_modes 中时。
-    """
-    if monitor not in monitor_modes:
-        raise ValueError(
-            f"不支持的 early_stopping.monitor: {monitor!r}，"
-            f"可选: {list(monitor_modes.keys())}"
-        )
-
-
-# Config loading functions
-
-
-def load_config_from_yaml(
-    path: str | Path,
-    *,
-    factory: Callable[[dict[str, Any]], T],
-) -> T:
-    """读取 YAML 配置文件，通过 ``factory`` 构建目标 Config 对象。
-
-    Args:
-        path: YAML 文件路径。
-        factory: ``dict -> Config`` 的构建函数（通常为各包的 ``from_dict``）。
-
-    Returns:
-        由 ``factory`` 返回的 Config 对象。
-    """
-    with Path(path).open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    return factory(data)
-
-
-def load_config_from_dict(
-    data: dict[str, Any],
-    *,
-    factory: Callable[[dict[str, Any]], T],
-) -> T:
-    """从字典构建 Config 对象。
-
-    直接委托给 ``factory``，作为统一入口存在，方便后续扩展校验/日志。
-
-    Args:
-        data: 配置字典。
-        factory: ``dict -> Config`` 的构建函数。
-
-    Returns:
-        由 ``factory`` 返回的 Config 对象。
-    """
-    return factory(data)
-
-
-def load_config_from_cli(
-    yaml_path: str | Path | None,
-    overrides: dict[str, Any] | None,
-    *,
-    factory: Callable[[dict[str, Any]], T],
-    override_map: dict[str, list[str]],
-    defaults: T | None = None,
-) -> T:
-    """分层加载配置：**默认值 -> YAML -> CLI 覆盖**。
-
-    Args:
-        yaml_path: YAML 配置文件路径（可为 ``None``）。
-        overrides: CLI 参数覆盖字典（``{arg_name: value, ...}``）。
-        factory: ``dict -> Config`` 的构建函数。
-        override_map: CLI 参数名到嵌套字典路径的映射
-            （如 ``{"hidden_dim": ["model", "params", "hidden_dim"]}``）。
-        defaults: 带全部默认值的 Config 实例（如 ``Config()``）。
-
-    Returns:
-        合并后的 Config 对象。
-    """
-    # 1. 从默认配置开始
-    config = defaults if defaults is not None else factory({})
-
-    # 2. 叠加 YAML
-    if yaml_path is not None:
-        yaml_path = Path(yaml_path)
-        if yaml_path.exists():
-            config = load_config_from_yaml(yaml_path, factory=factory)
-
-    # 3. 应用 CLI 覆盖
-    if overrides:
-        raw = asdict(config)
-        apply_overrides(raw, overrides, override_map)
-        config = factory(raw)
-
-    return config
-
-
-# Dict utilities
-
-
-def set_nested(d: dict, keys: list[str], value: Any) -> None:
-    """按 key 路径设置嵌套字典值，中间层不存在则自动创建。
-
-    Example:
-        >>> d = {}
-        >>> set_nested(d, ["model", "params", "hidden_dim"], 128)
-        >>> d
-        {'model': {'params': {'hidden_dim': 128}}}
-    """
-    for key in keys[:-1]:
-        d = d.setdefault(key, {})
-    d[keys[-1]] = value
-
-
-def apply_overrides(
-    data: dict[str, Any],
-    overrides: dict[str, Any],
-    override_map: dict[str, list[str]],
-) -> None:
-    """将 CLI 参数按 ``override_map`` 注入嵌套字典（原地修改）。
-
-    仅处理非 ``None`` 且在 ``override_map`` 中存在的键。
-
-    Args:
-        data: 目标配置字典（原地修改）。
-        overrides: CLI 覆盖参数。
-        override_map: CLI 参数名到嵌套字典路径的映射。
-    """
-    for cli_key, value in overrides.items():
-        if value is None:
-            continue
-        path = override_map.get(cli_key)
-        if path is None:
-            continue
-        set_nested(data, path, value)
+__all__ = [
+    "RuntimeConfig",
+    "ExperimentConfig",
+    "EarlyStoppingConfig",
+    "OptimizerConfig",
+    "SerializableConfig",
+    "load_config_from_yaml",
+    "load_config_from_dict",
+    "load_config_from_cli",
+    "set_nested",
+    "apply_overrides",
+]
