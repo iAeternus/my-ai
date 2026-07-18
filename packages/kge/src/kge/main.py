@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> None:
     device = get_device(cfg.runtime.device)
     logger.info(f"Device: {device}")
 
-    # 实验目录 — [shared] 使用 core 统一 ExperimentManager
+    # 实验目录
     exp_mgr = ExperimentManager(
         save_dir=cfg.experiment.save_dir,
         name_prefix=cfg.experiment.name_prefix,
@@ -85,18 +85,14 @@ def main(argv: list[str] | None = None) -> None:
         # 保存
         exp_mgr.save_history(history, run_dir=run_dir)
 
-        # 绘图 — [shared] PlotSpec 声明式替代硬编码分支
+        # 绘图
         mrr_keys = [k for k in history if "mrr" in k.lower()]
         hits_keys = [k for k in history if "hits" in k.lower()]
         specs = [
-            PlotSpec(
-                title="Loss", train_key="loss", val_key="val_loss", ylabel="Loss"
-            ),
+            PlotSpec(title="Loss", train_key="loss", val_key="val_loss", ylabel="Loss"),
         ]
         if mrr_keys:
-            specs.append(
-                PlotSpec(title="MRR", multi_keys=mrr_keys, ylabel="MRR")
-            )
+            specs.append(PlotSpec(title="MRR", multi_keys=mrr_keys, ylabel="MRR"))
         if hits_keys:
             specs.append(
                 PlotSpec(title="Hits@K", multi_keys=hits_keys, ylabel="Hits@K")

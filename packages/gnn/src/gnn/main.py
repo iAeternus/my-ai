@@ -12,10 +12,8 @@ from gnn.trainer.factory import create_trainer
 from core.experiment import ExperimentManager, PlotSpec
 from core.utils import get_device, seed_everything, setup_logging
 
-import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torch_geometric.data import Data
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +21,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     # 配置
     args = parse_args()
-    config_path: str | None = (
-        str(resolve_config(args.config)) if args.config else None
-    )
+    config_path: str | None = str(resolve_config(args.config)) if args.config else None
     cfg = from_cli(config_path, overrides=vars(args))
 
     # 加载数据
@@ -34,7 +30,7 @@ def main() -> None:
     # 输入特征归一化（Row-wise L2，GNN 标准预处理）
     data.x = F.normalize(cast(Tensor, data.x), p=2, dim=1)
 
-    # 实验目录 — [shared] 使用 core 统一 ExperimentManager
+    # 实验目录
     exp = ExperimentManager(
         save_dir=cfg.experiment.save_dir,
         name_prefix=cfg.experiment.name_prefix,
@@ -63,11 +59,9 @@ def main() -> None:
     edge_index: Tensor = cast(Tensor, data.edge_index)
     num_classes = int(y.max().item()) + 1
 
-    # 绘图规格 — [shared] PlotSpec 声明式替代硬编码分支
+    # 绘图规格
     plot_specs = [
-        PlotSpec(
-            title="Loss", train_key="loss", val_key="val_loss", ylabel="Loss"
-        ),
+        PlotSpec(title="Loss", train_key="loss", val_key="val_loss", ylabel="Loss"),
     ]
     if cfg.task == TaskType.NODE_CLASSIFICATION:
         plot_specs.append(
@@ -77,9 +71,7 @@ def main() -> None:
         )
     else:
         plot_specs.append(
-            PlotSpec(
-                title="AUC", train_key="auc", val_key="val_auc", ylabel="AUC"
-            )
+            PlotSpec(title="AUC", train_key="auc", val_key="val_auc", ylabel="AUC")
         )
 
     results: dict[int, dict[str, Any]] = {}
@@ -97,7 +89,7 @@ def main() -> None:
             train_data, val_data, test_data, run_dir / "checkpoints"
         )
 
-        # 保存产物 —— 多 seed 时各 seed 独立保存
+        # 保存产物，多 seed 时各 seed 独立保存
         if multi_seed:
             exp.save_history(history, run_dir=run_dir)
             exp.plot_metrics(history, specs=plot_specs, run_dir=run_dir)

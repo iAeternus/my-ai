@@ -22,7 +22,7 @@ from core.datasets import (
     random_split_indices,
     stratified_split_indices,
 )
-from core.experiment import ExperimentManager, PlotSpec, configure_cjk_font
+from core.experiment import ExperimentManager, PlotSpec
 from core.utils.paths import (
     DATA_DIR,
     OUTPUT_DIR,
@@ -85,7 +85,6 @@ __all__ = [
     "TRANSFORM_REGISTRY",
     "TripletDataset",
     "apply_overrides",
-    "configure_cjk_font",
     "dict_get_or_default",
     "dict_pop_or_default",
     "download_file",
