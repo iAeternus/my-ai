@@ -17,6 +17,33 @@ from numpy.typing import NDArray
 from torch import Tensor
 from torch_geometric.data import Data
 
+# 强制浅色风格 —— 覆盖 Jupyter 深色主题 / matplotlibrc 深色配置
+# 优先使用 seaborn 浅色主题，不可用时回退到显式 rcParams
+try:
+    plt.style.use("seaborn-v0_8-whitegrid")
+except OSError:
+    plt.style.use("default")
+_STYLE_WHITE = "#ffffff"
+_STYLE_LIGHT_GRAY = "#f5f5f5"
+_STYLE_HEADER_BG = "#e8e8e8"
+_STYLE_TEXT_DARK = "#222222"
+# 全局 rcParams 兜底
+matplotlib.rcParams.update(
+    {
+        "figure.facecolor": _STYLE_WHITE,
+        "figure.edgecolor": _STYLE_WHITE,
+        "axes.facecolor": _STYLE_LIGHT_GRAY,
+        "axes.edgecolor": "#cccccc",
+        "text.color": _STYLE_TEXT_DARK,
+        "axes.labelcolor": _STYLE_TEXT_DARK,
+        "xtick.color": "#555555",
+        "ytick.color": "#555555",
+        "savefig.facecolor": _STYLE_WHITE,
+        "savefig.transparent": False,
+        "grid.alpha": 0.2,
+    }
+)
+
 # CJK 字体
 _CJK_FONT_CANDIDATES = [
     "Microsoft YaHei",
@@ -66,6 +93,7 @@ def plot_training_curves(
         含两个子图的 Figure
     """
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
+    fig.patch.set_facecolor(_STYLE_WHITE)
     epochs = list(range(1, len(history.get("loss", [])) + 1))
 
     #  Loss
@@ -136,6 +164,7 @@ def plot_class_distribution(data: Data) -> Figure:
     n_classes = len(classes)
 
     fig, ax = plt.subplots(figsize=(max(6, n_classes * 1.2), 4))
+    fig.patch.set_facecolor(_STYLE_WHITE)
     x = np.arange(n_classes)
     width = 0.25
 
@@ -201,6 +230,7 @@ def plot_confusion_matrix(
         title = "混淆矩阵（绝对计数）"
 
     fig, ax = plt.subplots(figsize=(max(6, n * 1.1), max(5, n * 0.9)))
+    fig.patch.set_facecolor(_STYLE_WHITE)
     im = ax.imshow(cm_display, cmap="Blues", aspect="auto")
 
     for i in range(n):
@@ -255,6 +285,7 @@ def plot_tsne_embeddings(
     reduced = tsne.fit_transform(embeddings)
 
     fig, ax = plt.subplots(figsize=(9, 7))
+    fig.patch.set_facecolor(_STYLE_WHITE)
     unique_labels = np.unique(labels)
     cmap = plt.colormaps[color_map]
 
@@ -354,6 +385,7 @@ def plot_edge_split_summary(
         train_data / val_data / test_data: ``RandomLinkSplit`` 返回的三个 Data
     """
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    fig.patch.set_facecolor(_STYLE_WHITE)
 
     # 左：各 split 边数量
     splits = []
@@ -420,6 +452,7 @@ def plot_roc_pr_curves(
     y_prob = 1 / (1 + np.exp(-y_score))  # sigmoid
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+    fig.patch.set_facecolor(_STYLE_WHITE)
 
     # ROC
     auc = roc_auc_score(y_true_b, y_prob)
@@ -469,6 +502,7 @@ def plot_prediction_histogram(
     y_prob = 1 / (1 + np.exp(-y_score))
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
+    fig.patch.set_facecolor(_STYLE_WHITE)
     ax.hist(
         y_prob[y_true_b == 1],
         bins=bins,
@@ -501,49 +535,92 @@ def plot_top_predictions_table(
     *,
     top_k: int = 10,
 ) -> Figure:
-    """Top-K 预测推荐表格图（高分数但标签为负的论文对）
+    """Top-K 预测推荐表格图（高分误判 + 最高分正样本）
+
+    注意：表格内不使用特殊 Unicode 字符（如 ↔ ✓ ✗），因为这些字符
+    在 CJK 字体（微软雅黑等）中缺失，会渲染为空白方块。
 
     Returns:
         matplotlib Figure（含表格）
     """
-    y_prob = 1 / (1 + np.exp(-y_score))
+    y_score_1d = np.asarray(y_score, dtype=float).ravel()
+    y_prob = 1.0 / (1.0 + np.exp(-y_score_1d))
     edge_index = data.edge_label_index.numpy()
-    edge_label = data.edge_label.numpy().astype(int)
+    edge_label = data.edge_label.numpy().astype(int).ravel()
 
-    # 筛选预测为正但实际为负的（高分误判）+ 最高分的正样本
-    mistakes = np.argsort(-y_prob)
-    rows = []
-    for idx in mistakes[: top_k * 2]:
+    false_pos_mask = (edge_label == 0) & (y_prob > 0.5)
+    true_pos_mask = edge_label == 1
+
+    fp_indices = np.argsort(-y_prob * false_pos_mask.astype(float))
+    fp_indices = fp_indices[false_pos_mask[fp_indices]]
+
+    tp_indices = np.argsort(-y_prob * true_pos_mask.astype(float))
+    tp_indices = tp_indices[true_pos_mask[tp_indices]]
+
+    rows: list[list[str]] = []
+    for idx in fp_indices:
         if len(rows) >= top_k:
             break
-        src, dst = edge_index[0, idx], edge_index[1, idx]
-        rows.append(
-            [
-                f"#{src} ↔ #{dst}",
-                f"{y_prob[idx]:.4f}",
-                "✓" if edge_label[idx] == 1 else "✗",
-            ]
-        )
+        src, dst = int(edge_index[0, idx]), int(edge_index[1, idx])
+        rows.append([f"#{src} -- #{dst}", f"{float(y_prob[idx]):.4f}", "No (FP)"])
+    for idx in tp_indices:
+        if len(rows) >= top_k:
+            break
+        src, dst = int(edge_index[0, idx]), int(edge_index[1, idx])
+        rows.append([f"#{src} -- #{dst}", f"{float(y_prob[idx]):.4f}", "Yes"])
 
-    fig, ax = plt.subplots(figsize=(8, 0.4 * len(rows) + 1.2))
-    ax.axis("off")
+    if not rows:
+        fig, ax = plt.subplots(figsize=(6, 2))
+        fig.patch.set_facecolor(_STYLE_WHITE)
+        ax.set_facecolor(_STYLE_WHITE)
+        ax.text(
+            0.5,
+            0.5,
+            "No predictions meet criteria",
+            ha="center",
+            va="center",
+            fontsize=12,
+            color=_STYLE_TEXT_DARK,
+        )
+        ax.axis("off")
+        return fig
+
+    # constrained_layout 比 tight_layout 对表格更友好
+    fig, ax = plt.subplots(
+        figsize=(9, 0.50 * len(rows) + 1.8),
+        constrained_layout=True,
+    )
+    fig.patch.set_facecolor(_STYLE_WHITE)
+    ax.set_facecolor(_STYLE_WHITE)
+
+    # 隐藏坐标轴但不影响表格定位
+    ax.set_axis_off()
+
     table = ax.table(
         cellText=rows,
-        colLabels=["论文对", "预测概率", "真实标签"],
+        colLabels=["Paper Pair", "Prob", "Label"],
         cellLoc="center",
         loc="center",
     )
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    table.scale(1.0, 1.5)
+    table.scale(1.0, 1.8)
 
-    # 样式
-    for key, cell in table.get_celld().items():
-        cell.set_edgecolor("#ddd")
-        if key[0] == 0:
-            cell.set_facecolor("#f0f0f0")
-            cell.set_text_props(weight="bold")
+    # 显式设置所有单元格样式，确保在任何主题下都可见
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor("#cccccc")
+        cell.set_linewidth(0.5)
+        if row == 0:
+            cell.set_facecolor(_STYLE_HEADER_BG)
+            cell.set_text_props(weight="bold", color=_STYLE_TEXT_DARK)
+        else:
+            cell.set_facecolor(_STYLE_WHITE)
+            cell.set_text_props(color=_STYLE_TEXT_DARK)
 
-    ax.set_title("Top-K 预测推荐（高置信度论文对）", fontweight="bold", pad=20)
-    fig.tight_layout()
+    ax.set_title(
+        "Top-K Predictions (high-confidence pairs)",
+        fontweight="bold",
+        pad=20,
+        color=_STYLE_TEXT_DARK,
+    )
     return fig
